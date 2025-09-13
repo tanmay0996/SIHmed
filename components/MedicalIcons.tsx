@@ -7,53 +7,20 @@ interface IconProps {
   animate?: boolean;
 }
 
-export const Stethoscope = ({ className = "w-8 h-8", animate = false }: IconProps) => {
-  const stethoscopeVariants = {
-    initial: { 
-      pathLength: 0,
-      opacity: 0,
-      scale: 0.9
-    },
-    animate: {
-      pathLength: 1,
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 1.5,
-        ease: "easeInOut",
-        when: "beforeChildren",
-        staggerChildren: 0.2
-      }
-    },
-    pulse: {
-      y: [0, -5, 0],
-      transition: {
-        duration: 2,
-        repeat: Infinity,
-        repeatType: "reverse" as const,
-        ease: "easeInOut"
-      }
-    }
-  };
-
-  const pathVariants = {
-    initial: { pathLength: 0, opacity: 0 },
-    animate: {
-      pathLength: 1,
-      opacity: 1,
-      transition: {
-        duration: 1,
-        ease: "easeInOut"
-      }
-    }
-  };
-
+export const Sphere = ({ className = "w-8 h-8", animate = false }: IconProps) => {
   return (
     <motion.div
       className={`relative ${className}`}
-      variants={animate ? stethoscopeVariants : undefined}
-      initial="initial"
-      animate={animate ? ["animate", "pulse"] : "animate"}
+      initial={{ scale: 0.8, opacity: 0, rotate: -30 }}
+      animate={{
+        scale: 1,
+        opacity: 1,
+        rotate: 0,
+        transition: {
+          duration: 0.8,
+          ease: "easeOut"
+        }
+      }}
     >
       <svg
         viewBox="0 0 120 120"
@@ -61,102 +28,108 @@ export const Stethoscope = ({ className = "w-8 h-8", animate = false }: IconProp
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full"
       >
-        {/* Stethoscope tube - main curve */}
-        <motion.path
-          d="M60 20C40 20 20 40 20 60C20 80 40 100 60 100C80 100 100 80 100 60"
-          stroke="url(#stethoscopeGradient)"
-          strokeWidth="8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          variants={pathVariants}
-          style={{
-            filter: 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.5))'
-          }}
-        />
+        <defs>
+          {/* Main sphere gradient */}
+          <radialGradient id="sphereGradient" cx="50%" cy="50%" r="70%" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#10b981" />
+            <stop offset="100%" stopColor="#065f46" />
+          </radialGradient>
+          
+          {/* Glow effect */}
+          <radialGradient id="sphereGlow" cx="50%" cy="50%" r="50%" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#a7f3d0" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+          </radialGradient>
+          
+          {/* Highlight */}
+          <radialGradient id="sphereHighlight" cx="30%" cy="30%" r="30%" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="white" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </radialGradient>
+          
+          {/* Grid pattern for texture */}
+          <pattern
+            id="sphereGrid"
+            width="20"
+            height="20"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 10 0 L 10 20 M 0 10 L 20 10"
+              stroke="white"
+              strokeWidth="0.5"
+              strokeLinecap="round"
+            />
+          </pattern>
+        </defs>
         
-        {/* Stethoscope tube - end curve */}
-        <motion.path
-          d="M100 60C100 60 105 65 110 60C115 55 110 50 105 50C100 50 100 55 100 55"
-          stroke="url(#stethoscopeGradient)"
-          strokeWidth="8"
-          strokeLinecap="round"
-          variants={pathVariants}
-        />
-        
-        {/* Stethoscope head */}
+        {/* Main sphere */}
         <motion.circle
           cx="60"
-          cy="20"
-          r="12"
-          fill="none"
-          stroke="url(#stethoscopeGradient)"
-          strokeWidth="6"
-          variants={{
-            initial: { scale: 0, opacity: 0 },
-            animate: { 
-              scale: 1, 
-              opacity: 1,
-              transition: {
-                duration: 0.5,
-                delay: 0.8,
-                type: "spring",
-                stiffness: 100
-              }
+          cy="60"
+          r="50"
+          fill="url(#sphereGradient)"
+          style={{
+            filter: 'drop-shadow(0 0 15px rgba(16, 185, 129, 0.5))'
+          }}
+          initial={{ scale: 0 }}
+          animate={{ 
+            scale: 1,
+            transition: { duration: 0.8, ease: [0.6, -0.05, 0.01, 0.99] }
+          }}
+        />
+        
+        {/* Glow effect */}
+        <motion.circle
+          cx="60"
+          cy="60"
+          r="50"
+          fill="url(#sphereGlow)"
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: [0, 0.7, 0],
+            transition: {
+              duration: 3,
+              repeat: Infinity,
+              repeatType: "reverse" as const,
+              ease: "easeInOut"
             }
           }}
         />
         
-        {/* Stethoscope chestpiece */}
+        {/* Highlight */}
+        <motion.circle
+          cx="45"
+          cy="45"
+          r="20"
+          fill="url(#sphereHighlight)"
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ 
+            scale: 1, 
+            opacity: 0.8,
+            transition: { duration: 1, delay: 0.3, ease: "easeOut" }
+          }}
+        />
+        
+        {/* Subtle grid texture */}
         <motion.rect
-          x="95"
-          y="45"
-          width="20"
-          height="30"
-          rx="10"
-          fill="none"
-          stroke="url(#stethoscopeGradient)"
-          strokeWidth="6"
-          variants={{
-            initial: { scale: 0, rotate: -45 },
-            animate: { 
-              scale: 1, 
-              rotate: 0,
-              transition: {
-                duration: 0.5,
-                delay: 1,
-                type: "spring",
-                stiffness: 100
-              }
-            }
+          width="100%"
+          height="100%"
+          fill="url(#sphereGrid)"
+          opacity={0.1}
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: 0.1,
+            transition: { duration: 1, delay: 0.5, ease: "easeOut" }
           }}
         />
-        
-        {/* Gradient definition */}
-        <defs>
-          <linearGradient
-            id="stethoscopeGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%" stopColor="#10B981" />
-            <stop offset="100%" stopColor="#059669" />
-          </linearGradient>
-          
-          {/* Inner glow effect */}
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="4" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
       </svg>
       
       {/* Subtle pulsing effect */}
       {animate && (
         <motion.div 
           className="absolute inset-0 rounded-full bg-green-400 opacity-10"
+          initial={{ scale: 1, opacity: 0.1 }}
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.1, 0.2, 0.1],
@@ -164,7 +137,7 @@ export const Stethoscope = ({ className = "w-8 h-8", animate = false }: IconProp
           transition={{
             duration: 3,
             repeat: Infinity,
-            repeatType: "reverse",
+            repeatType: "reverse" as const,
             ease: "easeInOut"
           }}
         />

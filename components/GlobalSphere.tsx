@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Sphere } from "./MedicalIcons";
 
 /**
- * GlobalStethoscope — oscillating path (right -> left -> right)
+ * GlobalSphere — A 2D sphere that follows a smooth scroll-based path
  *
  * Usage:
- *   <GlobalStethoscope debug showFallback />
+ *   <GlobalSphere debug showFallback />
  * Turn off debug/showFallback for production.
  */
 
@@ -29,7 +29,7 @@ export default function GlobalSphere({
 
   // X positions corresponding to control points (percent values)
   // Pattern: start near center (0) -> move right (60%) -> move left (-20%) -> move right again (60%) -> exit (120%)
-  const xPositions = ["0%", "60%", "-100%", "60%", "120%"];
+  const xPositions = ["0%", "80%", "-100%", "60%", "120%"];
 
   // Y positions give a small vertical arc as it travels
   const yPositions = ["0%", "6%", "10%", "8%", "20%"];
@@ -40,12 +40,8 @@ export default function GlobalSphere({
   // Scale (small bounce)
   const scalePositions = [1, 0.9, 0.78, 0.95, 1.05];
 
-  // Opacity: visible across most of path, small fade at the end
-  const opacityPositions = [0.5, 0.5, 0.2, 0.2, 0];
-
-
-  // Convert rotation strings to numeric degrees for useTransform (useTransform accepts numbers too)
-  // But framer-motion accepts strings too for rotate so we can keep them as strings; still use them directly.
+  // Opacity: very subtle visibility with fade in/out
+  const opacityPositions = [0.5, 0.1, 0.15, 0.15, 0];
 
   // Build transforms driven by global scroll
   const x = useTransform(scrollYProgress, controlPoints, xPositions);
@@ -92,7 +88,7 @@ export default function GlobalSphere({
 
       <div aria-hidden style={containerStyle} className="pointer-events-none">
         <motion.div
-          className="fixed top-0 left-0 w-full h-screen flex items-center justify-center z-50 "
+          className="fixed top-0 left-0 w-full h-screen flex items-center justify-center z-50"
           initial={false}
           style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%" }}
         >
@@ -110,7 +106,7 @@ export default function GlobalSphere({
             <div
               style={{
                 display: "inline-block",
-                WebkitFilter: "drop-shadow(0 12px 24px rgba(0,0,0,0.12))",
+                WebkitFilter: "drop-shadow(0 12px 24px rgba(16, 185, 129, 0.3))",
               }}
             >
               <Sphere className="w-72 h-72 md:w-96 md:h-96" animate />
@@ -133,8 +129,8 @@ export default function GlobalSphere({
                   width: 18,
                   height: 18,
                   borderRadius: 9,
-                  background: "#7c3aed",
-                  boxShadow: "0 8px 20px rgba(124,58,237,0.28)",
+                  background: "#10b981",
+                  boxShadow: "0 8px 20px rgba(16, 185, 129, 0.3)",
                   transform: "translate(-50%, -50%)",
                 }}
               />
