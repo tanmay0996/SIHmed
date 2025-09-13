@@ -152,3 +152,29 @@ input:focus-visible {
   outline: 2px solid #10b981;
   outline-offset: 2px;
 }
+
+.heartbeat-line {
+  background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
+  height: 2px;
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
+  50% { opacity: 1; transform: scaleX(1.2); }
+}
+
+.medical-pulse {
+  animation: medical-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes medical-pulse {
+  0%, 100% { 
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}

@@ -31,14 +31,60 @@ export const MedicalCross: React.FC<{ className?: string }> = ({ className = "w-
 );
 
 export const HeartbeatLine: React.FC<{ className?: string }> = ({ className = "w-16 h-8" }) => (
-  <svg className={className} viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path
-      d="M0 25 L30 25 L35 10 L40 40 L45 15 L50 35 L55 25 L200 25"
-      stroke="currentColor"
-      strokeWidth="2"
-      fill="none"
-    />
-  </svg>
+  <div className="relative overflow-hidden">
+    <svg className={className} viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M0 25 L30 25 L35 10 L40 40 L45 15 L50 35 L55 25 L200 25"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        className="opacity-30"
+      />
+      <path
+        d="M0 25 L30 25 L35 10 L40 40 L45 15 L50 35 L55 25 L200 25"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        className="animate-heartbeat"
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: '100%',
+          height: '100%',
+        }}
+      />
+    </svg>
+    <style jsx global>{`
+      @keyframes heartbeat {
+        0% {
+          transform: translateX(-100%);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+      .animate-heartbeat {
+        animation: heartbeat 2s ease-in-out infinite;
+        stroke-dasharray: 1000;
+        stroke-dashoffset: 1000;
+        animation: dash 2s ease-in-out infinite;
+      }
+      @keyframes dash {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+    `}</style>
+  </div>
 );
 
 export const StethoscopeIcon: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) => (
