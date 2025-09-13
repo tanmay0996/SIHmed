@@ -120,7 +120,7 @@ export default function TechnicalSpecs() {
   ];
 
   return (
-    <section id="docs" ref={ref} className="py-20 bg-[var(--accent-gray)]">
+    <section id="docs" ref={ref} className="  py-20 bg-[var(--accent-gray)]">
       <div className="container mx-auto px-4">
         <motion.div
           className="text-center mb-16"

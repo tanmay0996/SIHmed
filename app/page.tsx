@@ -6,11 +6,13 @@ import HowItWorks from '@/components/HowItWorks';
 import TechnicalSpecs from '@/components/TechnicalSpecs';
 import EnterpriseReady from '@/components/EnterpriseReady';
 import Footer from '@/components/Footer';
+import GlobalStethoscope from '@/components/GlobalStethoscope';
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-white">
       <Header />
+      <GlobalStethoscope />
       <Hero />
       <HowItWorks />
       <TechnicalSpecs />

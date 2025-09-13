@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
-import { ArrowRight, Database, Zap, Shield } from 'lucide-react';
+import { ArrowRight, Database, Zap } from 'lucide-react';
 import { NetworkIcon, MedicalCross } from './MedicalIcons';
 
 const steps = [
@@ -60,23 +60,43 @@ export default function HowItWorks() {
   const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.3, 1, 0.3]);
 
   return (
-    <section id="integration" ref={ref} className="py-20 relative overflow-hidden bg-white">
+    <section
+      id="integration"
+      ref={ref}
+      className="py-20 relative overflow-hidden bg-white/30 backdrop-blur-xl"
+      data-stethoscope-anchor="howitworks-top"
+    >
+      {/* optional mid anchor to make the stethoscope move further right while inside this section */}
+      <div
+        aria-hidden
+        data-stethoscope-anchor="howitworks-mid"
+        style={{
+          position: 'absolute',
+          left: '60%',
+          top: '40%',
+          width: 1,
+          height: 1,
+          pointerEvents: 'none',
+          opacity: 0
+        }}
+      />
+
       {/* Animated Background */}
       <motion.div 
-        className="absolute inset-0 bg-gradient-to-br from-[var(--accent-gray)] to-white opacity-50"
+        className="absolute inset-0 bg-gradient-to-br from-[var(--accent-gray)] to-white/40"
         style={{ y: backgroundY, opacity }}
       />
       
       {/* Floating Icons */}
       <motion.div
-        className="absolute top-20 right-20 text-[var(--primary-green)] opacity-5"
+        className="absolute top-20 right-20 text-[var(--primary-green)] opacity-20"
         animate={{ rotate: 360, scale: [1, 1.2, 1] }}
         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
       >
         <NetworkIcon className="w-32 h-32" />
       </motion.div>
 
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-4 relative z-0">
         <motion.div
           className="text-center mb-16"
           initial={{ opacity: 0, y: 50 }}
@@ -86,7 +106,7 @@ export default function HowItWorks() {
           <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-black)] mb-6">
             How It Works
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-700 max-w-3xl mx-auto">
             Seamless integration in three simple steps. From traditional Ayush diagnoses 
             to WHO-compliant ICD-11 codes in milliseconds.
           </p>
@@ -115,7 +135,7 @@ export default function HowItWorks() {
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <div className="bg-white rounded-2xl p-8 shadow-xl border border-[var(--border-light)] hover:shadow-2xl transition-all duration-300">
+                    <div className="rounded-2xl p-8 shadow-xl border border-white/20 bg-white/40 backdrop-blur-lg hover:shadow-2xl transition-all duration-300">
                       <div className="flex items-center mb-4">
                         <motion.div 
                           className={`w-12 h-12 rounded-full bg-gradient-to-r ${step.color} flex items-center justify-center mr-4`}
@@ -133,24 +153,24 @@ export default function HowItWorks() {
                           </h3>
                         </div>
                       </div>
-                      <p className="text-gray-600 leading-relaxed mb-6">
+                      <p className="text-gray-700 leading-relaxed mb-6">
                         {step.description}
                       </p>
                       
                       {/* Feature List */}
                       <div className="flex flex-wrap gap-2">
                         {step.id === 1 && ['RESTful API', 'JSON Format', 'Rate Limited'].map(feature => (
-                          <span key={feature} className="bg-[var(--accent-gray)] text-gray-700 px-3 py-1 rounded-full text-sm">
+                          <span key={feature} className="bg-white/40 backdrop-blur-sm text-gray-800 px-3 py-1 rounded-full text-sm border border-white/20">
                             {feature}
                           </span>
                         ))}
                         {step.id === 2 && ['ML-Powered', 'Real-time', '94%+ Accuracy'].map(feature => (
-                          <span key={feature} className="bg-[var(--accent-gray)] text-gray-700 px-3 py-1 rounded-full text-sm">
+                          <span key={feature} className="bg-white/40 backdrop-blur-sm text-gray-800 px-3 py-1 rounded-full text-sm border border-white/20">
                             {feature}
                           </span>
                         ))}
                         {step.id === 3 && ['FHIR R4', 'WHO Compliant', 'JSON/XML'].map(feature => (
-                          <span key={feature} className="bg-[var(--accent-gray)] text-gray-700 px-3 py-1 rounded-full text-sm">
+                          <span key={feature} className="bg-white/40 backdrop-blur-sm text-gray-800 px-3 py-1 rounded-full text-sm border border-white/20">
                             {feature}
                           </span>
                         ))}
@@ -162,7 +182,7 @@ export default function HowItWorks() {
                 {/* Code Example */}
                 <div className="flex-1">
                   <motion.div
-                    className="bg-[var(--code-bg)] rounded-xl p-6 border border-[var(--border-light)] font-mono text-sm overflow-x-auto"
+                    className="rounded-xl p-6 border border-white/20 bg-white/30 backdrop-blur-md font-mono text-sm overflow-x-auto"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
                     transition={{ delay: step.delay + 0.3, duration: 0.5 }}
@@ -174,9 +194,9 @@ export default function HowItWorks() {
                         <div className="w-3 h-3 rounded-full bg-yellow-400" />
                         <div className="w-3 h-3 rounded-full bg-green-400" />
                       </div>
-                      <span className="text-xs text-gray-500">Step {step.id} Response</span>
+                      <span className="text-xs text-gray-600">Step {step.id} Response</span>
                     </div>
-                    <pre className="text-gray-700 whitespace-pre-wrap">
+                    <pre className="text-gray-800 whitespace-pre-wrap">
                       <code>{step.code}</code>
                     </pre>
                   </motion.div>
@@ -212,7 +232,7 @@ export default function HowItWorks() {
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           transition={{ delay: 0.8, duration: 0.8 }}
         >
-          <div className="bg-white rounded-2xl p-8 shadow-xl border border-[var(--border-light)] inline-block">
+          <div className="rounded-2xl p-8 shadow-xl border border-white/20 bg-white/40 backdrop-blur-lg inline-block">
             <div className="flex items-center justify-center space-x-8">
               <div className="text-center">
                 <motion.div 
@@ -223,9 +243,9 @@ export default function HowItWorks() {
                 >
                   &lt;100ms
                 </motion.div>
-                <div className="text-sm text-gray-600">Response Time</div>
+                <div className="text-sm text-gray-700">Response Time</div>
               </div>
-              <div className="w-px h-12 bg-[var(--border-light)]" />
+              <div className="w-px h-12 bg-white/30" />
               <div className="text-center">
                 <motion.div 
                   className="text-3xl font-bold text-[var(--primary-green)]"
@@ -235,9 +255,9 @@ export default function HowItWorks() {
                 >
                   99.9%
                 </motion.div>
-                <div className="text-sm text-gray-600">Uptime</div>
+                <div className="text-sm text-gray-700">Uptime</div>
               </div>
-              <div className="w-px h-12 bg-[var(--border-light)]" />
+              <div className="w-px h-12 bg-white/30" />
               <div className="text-center">
                 <motion.div 
                   className="text-3xl font-bold text-[var(--primary-green)]"
@@ -247,7 +267,7 @@ export default function HowItWorks() {
                 >
                   94.2%
                 </motion.div>
-                <div className="text-sm text-gray-600">Accuracy</div>
+                <div className="text-sm text-gray-700">Accuracy</div>
               </div>
             </div>
           </div>

@@ -1,30 +1,27 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, useInView, useMotionValue } from 'framer-motion';
-import { useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import { Search, ArrowRight, CheckCircle, Zap } from 'lucide-react';
-import { Stethoscope, DNAHelix, MedicalCross, HeartbeatLine } from './MedicalIcons';
+import { DNAHelix, MedicalCross, HeartbeatLine } from './MedicalIcons';
 
 export default function Hero() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResult, setSearchResult] = useState<any>(null);
   const [strokeFilled, setStrokeFilled] = useState(false);
-  
+
   const ref = useRef<HTMLDivElement>(null);
-  const stethoscopeRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: false });
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"]
   });
-  
-  // Stethoscope scroll-based transformations matching the bottle animation pattern
-  const stethoscopeRotation = useTransform(scrollYProgress, [0, 0.33, 0.66, 1], [20, 0, 10, -10]);
-  const stethoscopeScale = useTransform(scrollYProgress, [0, 0.33, 0.66, 1], [1, 0.8, 0.7, 0.7]);
-  const stethoscopeX = useTransform(scrollYProgress, [0, 0.33, 0.66, 1], ['0%', '0%', '30%', '-25%']);
-  const stethoscopeOpacity = useTransform(scrollYProgress, [0, 0.1, 0.9, 1], [0, 1, 1, 0.6]);
+
+  // small local transforms used for decorative elements (no stethoscope here)
+  const helixRotate = useTransform(scrollYProgress, [0, 1], [0, 20]);
+  const helixScale = useTransform(scrollYProgress, [0, 1], [1, 0.8]);
+  const certOpacity = useTransform(scrollYProgress, [0, 0.3, 0.7], [1, 0.8, 0.3]);
 
   useEffect(() => {
     const timer = setTimeout(() => setStrokeFilled(true), 1500);
@@ -33,13 +30,12 @@ export default function Hero() {
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
-    
+
     setIsSearching(true);
     setSearchResult(null);
-    
-    // Simulate API call
+
     await new Promise(resolve => setTimeout(resolve, 1200));
-    
+
     const mockResult = {
       ayushTerm: searchTerm,
       icd11Code: 'QA02.0Z',
@@ -47,47 +43,43 @@ export default function Hero() {
       fhirMapping: 'CodeSystem: ICD-11 MMS | Version: 2022-02',
       confidence: 94
     };
-    
+
     setSearchResult(mockResult);
     setIsSearching(false);
   };
 
   return (
-    <section ref={ref} className="relative min-h-[200vh] pt-20 pb-12 overflow-hidden">
+    <section
+      ref={ref}
+      className="  relative min-h-[200vh] pt-20 pb-12 overflow-hidden"
+      data-stethoscope-anchor="hero-top" // anchor for global stethoscope
+    >
+      {/* invisible anchor where stethoscope should rest at bottom-left of hero */}
+      <div
+        aria-hidden
+        data-stethoscope-anchor="hero-bottom"
+        style={{
+          position: 'absolute',
+          left: '8%',
+          bottom: '6rem',
+          width: 1,
+          height: 1,
+          pointerEvents: 'none',
+          opacity: 0
+        }}
+      />
+
       {/* Background Grid */}
       <div className="absolute inset-0 medical-grid opacity-30" />
-      
-      {/* Pinned Stethoscope Animation */}
-      <motion.div
-        ref={stethoscopeRef}
-        className="fixed top-0 left-0 w-full h-screen z-10 flex items-center justify-center pointer-events-none"
-        style={{ 
-          opacity: stethoscopeOpacity,
-          x: stethoscopeX
-        }}
-      >
-        <motion.div
-          style={{ 
-            rotate: stethoscopeRotation,
-            scale: stethoscopeScale
-          }}
-          className="text-[var(--primary-green)] drop-shadow-lg"
-          initial={{ opacity: 0, scale: 0 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.3, ease: "easeOut", delay: 0.5 }}
-        >
-          <Stethoscope className="w-80 h-80 md:w-96 md:h-96" animate />
-        </motion.div>
-      </motion.div>
-      
-      {/* Certification Stamp */}
+
+      {/* Certification Stamp (kept) */}
       <motion.div
         className="fixed top-1/3 left-[35%] z-20 pointer-events-none"
         initial={{ opacity: 0, scale: 100, rotate: -20 }}
         animate={{ opacity: 1, scale: 1, rotate: -20 }}
         transition={{ duration: 0.2, ease: "backOut", delay: 0.7 }}
-        style={{ 
-          opacity: useTransform(scrollYProgress, [0, 0.3, 0.7], [1, 0.8, 0.3])
+        style={{
+          opacity: certOpacity
         }}
       >
         <div className="bg-[var(--primary-green)] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg transform -translate-x-1/2 -translate-y-1/2">
@@ -98,19 +90,18 @@ export default function Hero() {
       {/* Secondary Medical Elements */}
       <motion.div
         className="absolute top-3/4 left-1/4 text-[var(--secondary-green)] opacity-10"
-        style={{ 
-          rotate: useTransform(stethoscopeRotation, (r) => r * -0.8),
-          scale: useTransform(stethoscopeScale, (s) => s * 0.8),
+        style={{
+          rotate: helixRotate,
+          scale: helixScale,
         }}
       >
-        <DNAHelix className="w-24 h-24" animate />
+        <DNAHelix className="w-24 h-24" />
       </motion.div>
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto min-h-screen flex flex-col justify-center">
           <div className="text-center mb-12">
-            {/* Main Headline */}
-            <motion.h1 
+            <motion.h1
               className={`text-5xl md:text-7xl font-bold mb-6 stroke-text ${strokeFilled ? 'filled' : ''}`}
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -119,20 +110,18 @@ export default function Hero() {
               Bridge Ayush &<br />Modern Medicine
             </motion.h1>
 
-            {/* Subtitle */}
-            <motion.p 
+            <motion.p
               className="text-xl md:text-2xl text-gray-600 mb-8 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.8 }}
             >
-              Lightweight terminology micro-service enabling dual-coding of 
+              Lightweight terminology micro-service enabling dual-coding of
               <span className="text-[var(--primary-green)] font-semibold"> Ayush diagnoses (NAMASTE) </span>
               with <span className="text-[var(--primary-green)] font-semibold">WHO ICD-11</span> standards
             </motion.p>
 
-            {/* Key Features */}
-            <motion.div 
+            <motion.div
               className="flex flex-wrap justify-center gap-6 mb-12"
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -158,11 +147,11 @@ export default function Hero() {
             </motion.div>
           </div>
 
-        
-        {/* Spacer for scroll effect */}
-        <div className="h-screen" />
+          {/* Spacer for scroll effect */}
+          <div className="h-screen" />
+
           {/* Live Demo Section */}
-          <motion.div 
+          <motion.div
             className="max-w-4xl mx-auto bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-[var(--border-light)] p-8 relative z-20"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -248,13 +237,13 @@ export default function Hero() {
             )}
 
             {/* CTA Buttons */}
-            <motion.div 
+            <motion.div
               className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.5, duration: 0.6 }}
             >
-              <motion.button 
+              <motion.button
                 className="bg-[var(--primary-green)] text-white px-8 py-3 rounded-lg font-medium hover:bg-[var(--secondary-green)] transition-all duration-300 flex items-center justify-center space-x-2 medical-pulse"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -262,7 +251,7 @@ export default function Hero() {
                 <span>Start Free Trial</span>
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
-              <motion.button 
+              <motion.button
                 className="border-2 border-[var(--primary-green)] text-[var(--primary-green)] px-8 py-3 rounded-lg font-medium hover:bg-[var(--primary-green)] hover:text-white transition-all duration-300"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
