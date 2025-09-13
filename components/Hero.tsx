@@ -72,22 +72,7 @@ export default function Hero() {
       {/* Background Grid */}
       <div className="absolute inset-0 medical-grid opacity-30" />
 
-      {/* Certification Stamp (kept) */}
-      <motion.div
-        className="fixed top-1/3 left-[35%] z-20 pointer-events-none"
-        initial={{ opacity: 0, scale: 100, rotate: -20 }}
-        animate={{ opacity: 1, scale: 1, rotate: -20 }}
-        transition={{ duration: 0.2, ease: "backOut", delay: 0.7 }}
-        style={{
-          opacity: certOpacity
-        }}
-      >
-        <div className="bg-[var(--primary-green)] text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg transform -translate-x-1/2 -translate-y-1/2">
-          FHIR R4 CERTIFIED
-        </div>
-      </motion.div>
-
-      {/* Secondary Medical Elements */}
+{/* Secondary Medical Elements */}
       <motion.div
         className="absolute top-3/4 left-1/4 text-[var(--secondary-green)] opacity-10"
         style={{
