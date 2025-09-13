@@ -2,147 +2,153 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --primary-green: #00a651;
-  --secondary-green: #4CAF50;
-  --medical-white: #ffffff;
-  --text-black: #1a1a1a;
-  --accent-gray: #f8f9fa;
-  --border-light: #e9ecef;
-  --success-green: #28a745;
-  --code-bg: #f8f9fa;
-  --font-inter: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 151 100% 33%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 151 100% 33%;
-    --radius: 0.5rem;
+    --primary-green: #10b981;
+    --secondary-green: #059669;
+    --accent-gray: #f8fafc;
+    --border-light: #e2e8f0;
+    --text-black: #1f2937;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground font-inter;
-  }
-}
-
-.medical-grid {
-  background-image: 
-    linear-gradient(rgba(0, 166, 81, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 166, 81, 0.03) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-.heartbeat-line {
-  background: linear-gradient(90deg, transparent, var(--primary-green), transparent);
-  height: 2px;
-  animation: heartbeat 2s ease-in-out infinite;
-}
-
-@keyframes heartbeat {
-  0%, 100% { opacity: 0.3; transform: scaleX(0.8); }
-  50% { opacity: 1; transform: scaleX(1.2); }
-}
-
-.medical-pulse {
-  animation: medical-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes medical-pulse {
-  0%, 100% { 
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% { 
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-}
-
-.stroke-text {
-  -webkit-text-stroke: 2px var(--primary-green);
-  -webkit-text-fill-color: transparent;
-  transition: all 0.8s ease;
-}
-
-.stroke-text.filled {
-  -webkit-text-fill-color: var(--text-black);
-}
-
-.font-inter {
-  font-family: var(--font-inter);
-}
-
-.font-mono {
-  font-family: var(--font-mono);
-}
-
-/* Stethoscope wrapper for scroll animation */
-.hero-stethoscope-wrapper {
-  position: fixed;
-  left: 0;
-  top: 0;
-  height: 100vh;
-  width: 100%;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-/* Actual stethoscope */
-.hero-stethoscope {
-  position: absolute;
-  width: auto;
-  height: 24rem;
-  filter: drop-shadow(8px 8px 12px rgba(0, 166, 81, 0.15));
-  transition: filter 0.3s ease;
-}
-
-/* Hero certification stamp */
-.hero-stamp {
-  position: fixed;
-  left: 35%;
-  top: 33.333%;
-  z-index: 20;
-  transform: translate(-50%, -50%) rotate(-20deg);
-  max-width: 150px;
-  pointer-events: none;
-}
-
-/* Mobile adjustments */
-@media (max-width: 768px) {
-  .hero-stethoscope {
-    height: 16rem;
+@layer components {
+  .animate-gradient {
+    background-size: 300% 300%;
+    animation: gradient 4s ease infinite;
   }
 
-  .hero-stamp {
-    max-width: 100px;
-    font-size: 0.75rem;
-    padding: 0.5rem 1rem;
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
   }
+
+  .medical-grid {
+    background-image: 
+      linear-gradient(90deg, rgba(16, 185, 129, 0.1) 1px, transparent 1px),
+      linear-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .medical-pulse {
+    position: relative;
+  }
+
+  .medical-pulse::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(45deg, #10b981, #059669);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .medical-pulse:hover::before {
+    opacity: 0.1;
+    animation: pulse-ring 1.5s infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(1);
+      opacity: 0.1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.05;
+    }
+    100% {
+      transform: scale(1.1);
+      opacity: 0;
+    }
+  }
+
+  .stroke-text {
+    -webkit-text-stroke: 2px transparent;
+    text-stroke: 2px transparent;
+    transition: all 1s ease;
+  }
+
+  .stroke-text.filled {
+    -webkit-text-stroke: 2px rgba(16, 185, 129, 0.2);
+    text-stroke: 2px rgba(16, 185, 129, 0.2);
+  }
+
+  /* Enhanced scroll animations */
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .float-animation {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .float-animation:nth-child(2) {
+    animation-delay: -2s;
+  }
+
+  .float-animation:nth-child(3) {
+    animation-delay: -4s;
+  }
+
+  /* Glass morphism effects */
+  .glass {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  /* Enhanced button hover effects */
+  .btn-glow {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-glow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  .btn-glow:hover::after {
+    left: 100%;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #10b981, #059669);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #059669, #047857);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Enhanced focus states */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
 }

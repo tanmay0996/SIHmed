@@ -41,7 +41,7 @@ export default function GlobalSphere({
   const scalePositions = [1, 0.9, 0.78, 0.95, 1.05];
 
   // Opacity: visible across most of path, small fade at the end
-  const opacityPositions = [0.5, 0.5, 0.2, 0.2, 0];
+  const opacityPositions = [0, 0.2, 0.2, 0.2, 0];
 
 
   // Convert rotation strings to numeric degrees for useTransform (useTransform accepts numbers too)

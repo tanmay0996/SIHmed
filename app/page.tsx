@@ -13,7 +13,7 @@ export default function Home() {
     <main className="min-h-screen bg-white">
       <Header />
       {/* <GlobalStethoscope /> */}
-      <GlobalSphere />
+      {/* <GlobalSphere /> */}
       <Hero />
       <HowItWorks />
       <TechnicalSpecs />
