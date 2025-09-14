@@ -165,12 +165,13 @@ export default function EnterpriseReady() {
           </div>
         </motion.div>
 
-        {/* Contact Form */}
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+       {/* Contact Form */}
+       <div className="grid lg:grid-cols-2 gap-12 items-center relative z-10">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
             transition={{ delay: 0.8, duration: 0.8 }}
+            className="relative z-20"
           >
             <h3 className="text-3xl font-bold text-[var(--text-black)] mb-6">
               Ready for Enterprise?
@@ -191,7 +192,7 @@ export default function EnterpriseReady() {
               ].map((benefit, index) => (
                 <motion.div
                   key={benefit}
-                  className="flex items-center space-x-3"
+                  className="flex items-center space-x-3 relative z-30"
                   initial={{ opacity: 0, x: -20 }}
                   animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -20 }}
                   transition={{ delay: 1 + index * 0.1, duration: 0.5 }}
@@ -204,13 +205,17 @@ export default function EnterpriseReady() {
           </motion.div>
 
           <motion.div
-            className="bg-[var(--accent-gray)] rounded-2xl p-8 border border-[var(--border-light)]"
+            className="bg-white rounded-2xl p-8 border border-[var(--border-light)] relative z-20 shadow-lg"
+            style={{ 
+              backgroundColor: '#ffffff',
+              position: 'relative'
+            }}
             initial={{ opacity: 0, x: 30 }}
             animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
             transition={{ delay: 0.8, duration: 0.8 }}
           >
             {!isSubmitted ? (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6 relative z-30">
                 <div>
                   <h4 className="text-xl font-bold text-[var(--text-black)] mb-2">
                     Contact Enterprise Sales
@@ -230,7 +235,7 @@ export default function EnterpriseReady() {
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
+                      className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent bg-white"
                       placeholder="Dr. John Smith"
                     />
                   </div>
@@ -243,7 +248,7 @@ export default function EnterpriseReady() {
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
+                      className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent bg-white"
                       placeholder="john@hospital.com"
                     />
                   </div>
@@ -258,7 +263,7 @@ export default function EnterpriseReady() {
                     required
                     value={formData.company}
                     onChange={(e) => setFormData({...formData, company: e.target.value})}
-                    className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
+                    className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent bg-white"
                     placeholder="Metro Health System"
                   />
                 </div>
@@ -271,7 +276,7 @@ export default function EnterpriseReady() {
                     rows={4}
                     value={formData.message}
                     onChange={(e) => setFormData({...formData, message: e.target.value})}
-                    className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent"
+                    className="w-full px-4 py-3 border border-[var(--border-light)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary-green)] focus:border-transparent bg-white"
                     placeholder="We're looking to integrate Ayush terminology into our EMR system..."
                   />
                 </div>
@@ -292,7 +297,7 @@ export default function EnterpriseReady() {
               </form>
             ) : (
               <motion.div
-                className="text-center py-8"
+                className="text-center py-8 relative z-30"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}

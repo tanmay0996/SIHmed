@@ -139,28 +139,32 @@ export default function TechnicalSpecs() {
 
         <div className="max-w-7xl mx-auto">
           {/* Features Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16 relative z-10">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
-                className="bg-white rounded-xl p-6 shadow-lg border border-[var(--border-light)] hover:shadow-xl transition-all duration-300"
+                className="bg-white rounded-xl p-6 shadow-lg border border-[var(--border-light)] hover:shadow-xl transition-all duration-300 relative z-20"
+                style={{ 
+                  backgroundColor: '#ffffff',
+                  position: 'relative'
+                }}
                 initial={{ opacity: 0, y: 30 }}
                 animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 whileHover={{ y: -5 }}
               >
                 <motion.div
-                  className="w-12 h-12 bg-[var(--primary-green)] rounded-lg flex items-center justify-center mb-4"
+                  className="w-12 h-12 bg-[var(--primary-green)] rounded-lg flex items-center justify-center mb-4 relative z-30"
                   whileHover={{ rotate: 10, scale: 1.1 }}
                   transition={{ duration: 0.3 }}
                 >
                   <feature.icon className="w-6 h-6 text-white" />
                 </motion.div>
-                <h3 className="text-lg font-bold text-[var(--text-black)] mb-2">
+                <h3 className="text-lg font-bold text-[var(--text-black)] mb-2 relative z-30">
                   {feature.title}
                 </h3>
-                <p className="text-gray-600 text-sm mb-4">{feature.description}</p>
-                <ul className="space-y-1">
+                <p className="text-gray-600 text-sm mb-4 relative z-30">{feature.description}</p>
+                <ul className="space-y-1 relative z-30">
                   {feature.specs.map((spec, specIndex) => (
                     <li key={specIndex} className="text-xs text-[var(--primary-green)] flex items-center">
                       <Check className="w-3 h-3 mr-1" />
@@ -239,7 +243,7 @@ export default function TechnicalSpecs() {
           </motion.div>
 
           {/* API Endpoints */}
-          <motion.div
+          {/* <motion.div
             className="mt-12 bg-white rounded-2xl shadow-xl border border-[var(--border-light)] p-8"
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
@@ -304,7 +308,7 @@ export default function TechnicalSpecs() {
                 </motion.div>
               ))}
             </div>
-          </motion.div>
+          </motion.div> */}
         </div>
       </div>
     </section>
