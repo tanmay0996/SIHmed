@@ -103,15 +103,15 @@ export default function Hero() {
 
   return (
     <section
-      ref={ref}
-      className="relative min-h-[100svh] h-full w-full flex flex-col justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 overflow-hidden"
-      data-stethoscope-anchor="hero-top"
-      style={{
-        minHeight: '-webkit-fill-available',
-        margin: 0,
-        padding: 0,
-      }}
-    >
+    ref={ref}
+    className="relative min-h-[100svh] h-full w-full flex flex-col justify-center overflow-hidden"
+    data-stethoscope-anchor="hero-top"
+    style={{
+      minHeight: '-webkit-fill-available',
+      margin: 0,
+      padding: 0,
+    }}
+  >
       {/* Subtle Background Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(16,185,129,0.08)_1px,transparent_0)] [background-size:16px_16px] sm:[background-size:24px_24px]" />
       
