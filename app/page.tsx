@@ -10,7 +10,7 @@ import GlobalStethoscope from '@/components/GlobalStethoscope';
 import GlobalSphere from '@/components/GlobalSphere';
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen w-full overflow-x-hidden bg-white">
       <Header />
       {/* <GlobalStethoscope /> */}
       {/* <GlobalSphere /> */}
