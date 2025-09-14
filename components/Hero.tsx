@@ -117,7 +117,7 @@ export default function Hero() {
       
       {/* Floating Medical Icons - More Subtle */}
       <motion.div
-        className="absolute top-16 right-4 sm:top-20 sm:right-16 text-emerald-400/10 sm:text-emerald-400/15"
+        className="absolute top-16 right-4 sm:top-20 sm:right-16 text-emerald-400/30 sm:text-emerald-400/40"
         style={{
           y: floatingY1,
           x: mousePosition.x * 0.3,
@@ -131,11 +131,11 @@ export default function Hero() {
           ease: "easeInOut"
         }}
       >
-        <MedicalCross className="w-8 h-8 sm:w-12 sm:h-12" />
+        <MedicalCross className="w-10 h-10 sm:w-14 sm:h-14" />
       </motion.div>
       
       <motion.div
-        className="absolute top-24 left-4 sm:top-32 sm:left-16 text-teal-400/10 sm:text-teal-400/15"
+        className="absolute top-24 left-4 sm:top-32 sm:left-16 text-teal-400/30 sm:text-teal-400/40"
         style={{
           y: floatingY2,
           x: mousePosition.x * -0.2,
@@ -153,7 +153,7 @@ export default function Hero() {
       </motion.div>
 
       <motion.div
-        className="absolute bottom-32 right-4 sm:right-20 text-emerald-300/15 sm:text-emerald-300/20"
+        className="absolute bottom-32 right-4 sm:right-20 text-emerald-400/30 sm:text-emerald-400/40"
         style={{
           y: floatingY3,
           rotate: helixRotate,
@@ -164,7 +164,7 @@ export default function Hero() {
       </motion.div>
 
       <motion.div
-        className="absolute bottom-40 left-4 sm:left-20 text-blue-400/10 sm:text-blue-400/15"
+        className="absolute bottom-40 left-4 sm:left-20 text-blue-400/30 sm:text-blue-400/40"
         style={{
           y: floatingY1,
           x: mousePosition.y * 0.1,

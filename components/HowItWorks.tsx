@@ -145,18 +145,18 @@ export default function HowItWorks() {
 
       {/* Floating Medical Icons - Reduced opacity to work with global background */}
       <motion.div
-        className="absolute top-20 right-20 text-emerald-400/10"
+        className="absolute top-16 right-16 text-emerald-400/30 sm:text-emerald-400/40"
         style={{
           y: floatingY1,
           rotate: floatingRotate,
           x: mousePosition.x * 0.3,
         }}
       >
-        <MicroscopeIcon className="w-32 h-32" />
+        <MicroscopeIcon className="w-24 h-24 sm:w-32 sm:h-32" />
       </motion.div>
 
       <motion.div
-        className="absolute bottom-32 left-16 text-blue-400/20"
+        className="absolute bottom-32 left-16 text-blue-400/30 sm:text-blue-400/40"
         style={{
           y: floatingY2,
           x: mousePosition.y * 0.2,
@@ -170,11 +170,11 @@ export default function HowItWorks() {
           ease: "linear"
         }}
       >
-        <DNAHelix className="w-24 h-24" />
+        <DNAHelix className="w-20 h-20 sm:w-24 sm:h-24" />
       </motion.div>
 
       <motion.div
-        className="absolute top-1/2 left-8 text-teal-400/15"
+        className="absolute top-1/2 left-8 text-teal-400/30 sm:text-teal-400/40"
         style={{
           y: floatingY1,
           x: mousePosition.x * -0.2,
@@ -189,7 +189,7 @@ export default function HowItWorks() {
           ease: "easeInOut"
         }}
       >
-        <StethoscopeIcon className="w-20 h-20" />
+        <StethoscopeIcon className="w-16 h-16 sm:w-20 sm:h-20" />
       </motion.div>
 
       {/* Optional mid anchor */}
