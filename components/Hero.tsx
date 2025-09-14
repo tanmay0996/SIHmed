@@ -193,7 +193,7 @@ export default function Hero() {
             <motion.div
               className="inline-flex items-center space-x-2 sm:space-x-3 bg-white/80 backdrop-blur-sm px-3 sm:px-6 py-2 sm:py-3 rounded-full border border-emerald-200/50 shadow-lg shadow-emerald-100/50 mb-4 sm:mb-8 mx-auto"
               variants={itemVariants}
-              whileHover={{ scale: 1.02, y: -2 }}
+              // whileHover={{ scale: 1.02, y: -2 }}
             >
               <div className="flex -space-x-1">
                 <Star className="w-4 h-4 text-emerald-500 fill-emerald-500" />
@@ -257,7 +257,7 @@ export default function Hero() {
                   key={feature.text}
                   className={`group flex items-center space-x-1.5 sm:space-x-2 bg-white/70 backdrop-blur-sm px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl border border-${feature.color}-200/50 shadow-sm hover:shadow-md transition-all duration-300`}
                   variants={itemVariants}
-                  whileHover={{ scale: 1.03, y: -2 }}
+                  // whileHover={{ scale: 1.03, y: -2 }}
                 >
                   <feature.icon className={`w-3 sm:w-4 h-3 sm:h-4 text-${feature.color}-500`} />
                   <span className="text-xs sm:text-sm font-medium text-slate-700">{feature.text}</span>
