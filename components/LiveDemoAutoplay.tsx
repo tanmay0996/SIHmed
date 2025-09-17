@@ -3,13 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Loader2, ArrowRight, MousePointer2 } from 'lucide-react';
-
+import ClickSpark from './ClickSpark';
 
 // Configurable timing constants
 const TYPEWRITER_SPEED = 100; // ms per character (slower = more visible typing)
 const LOADER_DURATION = 1500; // ms
 const CURSOR_MOVE_DURATION = 2500; // ms - slower cursor movement
-const PAUSE_AFTER_FHIR = 3000; // ms
+const PAUSE_AFTER_FHIR = 2000; // ms
 const PAUSE_BETWEEN_SCENARIOS = 2000; // ms
 
 // Demo scenarios data
@@ -125,6 +125,8 @@ interface TypewriterState {
   isFlipped: boolean;
   cursorPosition: { x: number; y: number };
   showCursor: boolean;
+  showClickEffect: boolean;
+  clickPosition: { x: number; y: number };
 }
 
 // Predefined perfect cursor movements (the first two that looked great)
@@ -290,7 +292,9 @@ export default function LiveDemoAutoplay() {
     showFhirOutput: false,
     isFlipped: false,
     cursorPosition: { x: 0, y: 0 },
-    showCursor: false
+    showCursor: false,
+    showClickEffect: false,
+    clickPosition: { x: 0, y: 0 }
   });
 
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -361,8 +365,18 @@ export default function LiveDemoAutoplay() {
           setState(prev => ({ 
             ...prev, 
             phase: 'flipping',
-            showCursor: false
+            showCursor: false,
+            showClickEffect: true,
+            clickPosition: { x: targetX, y: targetY }
           }));
+          
+          // Hide click effect after animation completes
+          setTimeout(() => {
+            setState(prev => ({
+              ...prev,
+              showClickEffect: false
+            }));
+          }, 600);
         }, 400 + Math.random() * 200); // Slightly more consistent timing
       }
     };
@@ -409,8 +423,14 @@ export default function LiveDemoAutoplay() {
           const containerRect = fhirButtonRef.current.closest('.relative')?.getBoundingClientRect();
           
           if (containerRect) {
-            const targetX = rect.left - containerRect.left + rect.width / 2 - 10;
-            const targetY = rect.top - containerRect.top + rect.height / 2 - 10;
+            // Calculate center of the button relative to its container
+            const buttonCenterX = rect.left - containerRect.left + rect.width / 2;
+            const buttonCenterY = rect.top - containerRect.top + rect.height / 2;
+            
+            // Adjust for the actual position where we want the click to appear
+            // Adding 5px right and 5px down from center
+            const targetX = buttonCenterX + 25;
+            const targetY = buttonCenterY + 23;
             
             // Fixed starting positions that worked perfectly
             const perfectStartingPositions = [
@@ -470,7 +490,9 @@ export default function LiveDemoAutoplay() {
             showFhirOutput: false,
             isFlipped: false,
             cursorPosition: { x: 0, y: 0 },
-            showCursor: false
+            showCursor: false,
+            showClickEffect: false,
+            clickPosition: { x: 0, y: 0 }
           });
         }, PAUSE_BETWEEN_SCENARIOS);
         break;
@@ -520,8 +542,9 @@ export default function LiveDemoAutoplay() {
               </button>
             </div>
 
-            {/* Animated Cursor */}
+            {/* Animated Cursor and Click Effect */}
             <AnimatedCursor position={state.cursorPosition} visible={state.showCursor} />
+            <ClickSpark position={state.clickPosition} visible={state.showClickEffect} />
             
             {/* Header - more compact */}
             <div className="text-center mb-4 pr-12">
