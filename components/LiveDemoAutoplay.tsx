@@ -517,7 +517,7 @@ export default function LiveDemoAutoplay() {
   const currentScenario = scenarios[state.currentScenarioIndex];
 
   return (
-    <section className="py-8 bg-gradient-to-br from-slate-50/50 to-white">
+    <section id="demo" className="py-8 bg-gradient-to-br from-slate-50/50 to-white">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         <motion.div
           className="relative"
@@ -550,7 +550,7 @@ export default function LiveDemoAutoplay() {
             <div className="text-center mb-4 pr-12">
               <motion.div className="flex items-center justify-center space-x-1.5 mb-2">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-xs font-semibold text-emerald-700">Live Demo</span>
+                <span className="text-xs font-semibold text-emerald-700">Demo</span>
               </motion.div>
               
               <h2 className="text-xl font-bold text-slate-800 mb-1">

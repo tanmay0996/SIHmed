@@ -96,18 +96,39 @@ export default function Header() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
           >
-            {['Demo', 'Integration', 'Docs', 'Pricing'].map((item, index) => (
-              <motion.a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium text-sm xl:text-base"
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
-              >
-                {item}
-              </motion.a>
-            ))}
+            {['Demo', 'How It Works', 'Docs', 'Pricing'].map((item, index) => {
+              const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                e.preventDefault();
+                let targetId = '';
+                
+                if (item === 'Demo') {
+                  targetId = 'demo';
+                } else if (item === 'How It Works') {
+                  targetId = 'how-it-works';
+                }
+                
+                if (targetId) {
+                  const targetSection = document.getElementById(targetId);
+                  if (targetSection) {
+                    targetSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }
+              };
+              
+              return (
+                <motion.a
+                  key={item}
+                  href={`#${item.toLowerCase()}`}
+                  onClick={handleClick}
+                  className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium text-sm xl:text-base"
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1, duration: 0.4 }}
+                >
+                  {item}
+                </motion.a>
+              );
+            })}
           </motion.nav>
 
           {/* Tablet Navigation - Visible only on tablet */}
@@ -200,19 +221,44 @@ export default function Header() {
           >
             <div className="flex flex-col space-y-3 sm:space-y-4">
               {/* Navigation Links */}
-              {['Demo', 'Integration', 'Docs', 'Pricing'].map((item, index) => (
-                <motion.a
-                  key={item}
-                  href={`#${item.toLowerCase()}`}
-                  className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium py-2 px-1 rounded-lg hover:bg-gray-50 text-base sm:text-lg"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {item}
-                </motion.a>
-              ))}
+              {['Demo', 'How It Works', 'Docs', 'Pricing'].map((item, index) => {
+                const handleMobileClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+                  e.preventDefault();
+                  setIsMenuOpen(false);
+                  let targetId = '';
+                  
+                  if (item === 'Demo') {
+                    targetId = 'demo';
+                  } else if (item === 'How It Works') {
+                    targetId = 'how-it-works';
+                  }
+                  
+                  if (targetId) {
+                    const targetSection = document.getElementById(targetId);
+                    if (targetSection) {
+                      targetSection.scrollIntoView({ behavior: 'smooth' });
+                      // Close the mobile menu after a short delay for better UX
+                      setTimeout(() => {
+                        setIsMenuOpen(false);
+                      }, 300);
+                    }
+                  }
+                };
+                
+                return (
+                  <motion.a
+                    key={item}
+                    href={`#${item.toLowerCase()}`}
+                    onClick={handleMobileClick}
+                    className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium py-2 px-1 rounded-lg hover:bg-gray-50 text-base sm:text-lg"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    {item}
+                  </motion.a>
+                );
+              })}
               
               {/* Mobile API Status & CTA */}
               <div className="pt-3 sm:pt-4 border-t border-[var(--border-light)]">
