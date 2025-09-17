@@ -96,7 +96,7 @@ export default function Header() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
           >
-            {['Demo', 'How It Works', 'Docs', 'Pricing'].map((item, index) => {
+            {['Demo', 'How It Works', 'Docs', 'Try Now'].map((item, index) => {
               const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
                 e.preventDefault();
                 let targetId = '';
@@ -221,7 +221,7 @@ export default function Header() {
           >
             <div className="flex flex-col space-y-3 sm:space-y-4">
               {/* Navigation Links */}
-              {['Demo', 'How It Works', 'Docs', 'Pricing'].map((item, index) => {
+              {['Demo', 'How It Works', 'Docs', 'Try Now'].map((item, index) => {
                 const handleMobileClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
                   e.preventDefault();
                   setIsMenuOpen(false);
