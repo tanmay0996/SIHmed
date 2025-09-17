@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Loader2, MousePointer2 } from 'lucide-react';
+import { Search, Loader2, ArrowRight, MousePointer2 } from 'lucide-react';
+
 
 // Configurable timing constants
-const TYPEWRITER_SPEED = 50; // ms per character
+const TYPEWRITER_SPEED = 100; // ms per character (slower = more visible typing)
 const LOADER_DURATION = 1500; // ms
 const CURSOR_MOVE_DURATION = 2500; // ms - slower cursor movement
-const PAUSE_AFTER_FHIR = 2000; // ms
-const PAUSE_BETWEEN_SCENARIOS = 1000; // ms
+const PAUSE_AFTER_FHIR = 3000; // ms
+const PAUSE_BETWEEN_SCENARIOS = 2000; // ms
 
 // Demo scenarios data
 const scenarios = [
@@ -113,7 +114,7 @@ const scenarios = [
 ];
 
 // Animation phases for each scenario
-type Phase = 'typing-user-input' | 'loading' | 'showing-output' | 'cursor-animation' | 'flipping' | 'showing-fhir' | 'pause-after-fhir' | 'transitioning';
+type Phase = 'typing-user-input' | 'loading' | 'showing-output' | 'cursor-animation' | 'flipping' | 'showing-fhir' | 'pause-after-fhir' | 'paused' | 'transitioning';
 
 interface TypewriterState {
   currentScenarioIndex: number;
@@ -303,6 +304,13 @@ export default function LiveDemoAutoplay() {
     }
   }, []);
 
+  // Handle top button click
+  const handleTopButtonClick = () => {
+    console.log('Top right button clicked!');
+    // Add your custom logic here
+    alert('Settings button clicked!');
+  };
+
   // Typewriter effect function
   const typeText = (text: string, currentText: string, callback: (newText: string, isComplete: boolean) => void) => {
     if (prefersReducedMotion.current) {
@@ -487,32 +495,46 @@ export default function LiveDemoAutoplay() {
   const currentScenario = scenarios[state.currentScenarioIndex];
 
   return (
-    <section className="py-12 bg-gradient-to-br from-slate-50/50 to-white">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-8 bg-gradient-to-br from-slate-50/50 to-white">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6">
         <motion.div
-          className="max-w-3xl mx-auto relative"
-          initial={{ opacity: 0, y: 40 }}
+          className="relative"
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.4 }}
         >
           {/* Background glow - reduced size */}
-          <div className="absolute -inset-3 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-2xl blur-2xl" />
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-xl shadow-lg border border-white/60 p-6">
+          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-xl blur-xl" />
+          <div className="relative bg-white/90 backdrop-blur-xl rounded-lg border border-white/60 p-4">
+            {/* FHIR Button - Static */}
+            <div className="absolute top-8 right-8 z-20">
+              <button
+                onClick={handleTopButtonClick}
+                className={`flex items-center justify-center px-4 py-2 rounded-full font-medium text-sm font-semibold ${
+                  state.phase === 'showing-output' 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-white text-emerald-600 border border-emerald-200'
+                }`}
+              >
+                {state.phase === 'showing-output' ? 'View FHIR' : 'FHIR'}
+              </button>
+            </div>
+
             {/* Animated Cursor */}
             <AnimatedCursor position={state.cursorPosition} visible={state.showCursor} />
             
             {/* Header - more compact */}
-            <div className="text-center mb-6">
-              <motion.div className="flex items-center justify-center space-x-2 mb-3">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-sm font-semibold text-emerald-700">Live Demo</span>
+            <div className="text-center mb-4 pr-12">
+              <motion.div className="flex items-center justify-center space-x-1.5 mb-2">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-xs font-semibold text-emerald-700">Live Demo</span>
               </motion.div>
               
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                Automatic Translation Demo
+              <h2 className="text-xl font-bold text-slate-800 mb-1">
+                Auto-Translation
               </h2>
-              <p className="text-slate-600 leading-relaxed">
-                Watch real-time Ayush-to-FHIR mapping in action
+              <p className="text-xs text-slate-600">
+                Ayush to FHIR mapping
               </p>
             </div>
 
@@ -523,7 +545,7 @@ export default function LiveDemoAutoplay() {
                 value={state.displayedUserInput}
                 readOnly
                 placeholder="Auto-typing demonstration..."
-                className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm placeholder:text-slate-400 cursor-default font-mono"
+                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-md bg-white/80 backdrop-blur-sm cursor-default font-mono min-h-[36px]"
               />
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               {state.phase === 'typing-user-input' && (
@@ -537,14 +559,14 @@ export default function LiveDemoAutoplay() {
             <AnimatePresence>
               {state.phase === 'loading' && (
                 <motion.div
-                  className="flex flex-col items-center justify-center py-12 space-y-3"
+                  className="flex flex-col items-center justify-center py-6 space-y-1"
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
-                  <p className="text-sm text-slate-600 font-medium">Processing your request...</p>
+                  <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                  <p className="text-xs text-slate-600">Processing...</p>
                   <div className="flex space-x-1">
                     {[0, 1, 2].map((index) => (
                       <motion.div
@@ -570,7 +592,7 @@ export default function LiveDemoAutoplay() {
             <AnimatePresence>
               {state.showSystemOutput && (
                 <motion.div
-                  className="relative h-80 perspective-1000"
+                  className="relative h-64 perspective-1000"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
@@ -603,7 +625,7 @@ export default function LiveDemoAutoplay() {
                         </div>
                       </div>
                     </div>
-                    <div className="relative h-64 overflow-hidden">
+                    <div className="relative h-48 overflow-hidden">
                       <motion.pre 
                         className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed h-full overflow-y-auto"
                         initial={{ opacity: 0, y: 20 }}
@@ -634,7 +656,7 @@ export default function LiveDemoAutoplay() {
                         FHIR
                       </span>
                     </div>
-                    <div className="relative h-64 overflow-hidden">
+                    <div className="relative h-48 overflow-hidden">
                       {state.showFhirOutput && (
                         <motion.pre 
                           className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed h-full overflow-y-auto"
@@ -652,14 +674,14 @@ export default function LiveDemoAutoplay() {
             </AnimatePresence>
 
             {/* Progress Indicator - more compact */}
-            <div className="flex justify-center mt-6 space-x-2">
+            <div className="flex justify-center mt-4 space-x-1.5">
               {scenarios.map((_, index) => (
                 <div
                   key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  className={`h-1 rounded-full transition-all duration-200 ${
                     index === state.currentScenarioIndex
-                      ? 'bg-emerald-500 w-5'
-                      : 'bg-slate-300'
+                      ? 'w-4 bg-emerald-500'
+                      : 'w-1.5 bg-slate-200'
                   }`}
                 />
               ))}
