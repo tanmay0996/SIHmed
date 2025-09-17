@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import Link from 'next/link';
 import { HeartbeatLine } from './MedicalIcons';
+
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -97,28 +99,38 @@ export default function Header() {
             transition={{ delay: 0.5, duration: 0.6 }}
           >
             {['Demo', 'How It Works', 'Docs', 'Try Now'].map((item, index) => {
+              if (item === 'Try Now') {
+                return (
+                  <Link 
+                    key={item}
+                    href="/TryNow"
+                    className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium text-sm xl:text-base"
+                  >
+                    <motion.span
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 + 3 * 0.1, duration: 0.4 }}
+                      className="block"
+                    >
+                      {item}
+                    </motion.span>
+                  </Link>
+                );
+              }
+              
               const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
                 e.preventDefault();
-                let targetId = '';
-                
-                if (item === 'Demo') {
-                  targetId = 'demo';
-                } else if (item === 'How It Works') {
-                  targetId = 'how-it-works';
-                }
-                
-                if (targetId) {
-                  const targetSection = document.getElementById(targetId);
-                  if (targetSection) {
-                    targetSection.scrollIntoView({ behavior: 'smooth' });
-                  }
+                const targetId = item === 'Demo' ? 'demo' : 'how-it-works';
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                  targetSection.scrollIntoView({ behavior: 'smooth' });
                 }
               };
               
               return (
                 <motion.a
                   key={item}
-                  href={`#${item.toLowerCase()}`}
+                  href={`#${item === 'Demo' ? 'demo' : 'how-it-works'}`}
                   onClick={handleClick}
                   className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium text-sm xl:text-base"
                   initial={{ opacity: 0, y: -20 }}
@@ -222,6 +234,26 @@ export default function Header() {
             <div className="flex flex-col space-y-3 sm:space-y-4">
               {/* Navigation Links */}
               {['Demo', 'How It Works', 'Docs', 'Try Now'].map((item, index) => {
+                if (item === 'Try Now') {
+                  return (
+                    <Link 
+                      key={item}
+                      href="/TryNow"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium py-2 px-1 rounded-lg hover:bg-gray-50 text-base sm:text-lg block"
+                    >
+                      <motion.span
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + 3 * 0.1, duration: 0.3 }}
+                        className="block"
+                      >
+                        {item}
+                      </motion.span>
+                    </Link>
+                  );
+                }
+
                 const handleMobileClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
                   e.preventDefault();
                   setIsMenuOpen(false);
@@ -248,12 +280,12 @@ export default function Header() {
                 return (
                   <motion.a
                     key={item}
-                    href={`#${item.toLowerCase()}`}
+                    href={`#${item === 'Demo' ? 'demo' : 'how-it-works'}`}
                     onClick={handleMobileClick}
                     className="text-[var(--text-black)] hover:text-[var(--primary-green)] transition-colors font-medium py-2 px-1 rounded-lg hover:bg-gray-50 text-base sm:text-lg"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
+                    transition={{ delay: 0.2 + index * 0.1, duration: 0.3 }}
                   >
                     {item}
                   </motion.a>
