@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Loader2, ArrowRight } from 'lucide-react';
+import { Paper, Box } from '@mui/material';
 
 // Demo scenarios data
 const scenarios = [
@@ -107,7 +108,7 @@ const scenarios = [
 
 export default function LiveDemoAutoplay() {
   const [inputValue, setInputValue] = useState('');
-  const [currentScenario, setCurrentScenario] = useState(null);
+  const [currentScenario, setCurrentScenario] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
 
@@ -126,17 +127,19 @@ export default function LiveDemoAutoplay() {
   };
 
   return (
-    <section  className="py-8 bg-gradient-to-br from-slate-50/50 to-white">
+    <div className="py-8 bg-gradient-to-br from-slate-50/50 to-white">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
-        <motion.div
-          className="relative"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
-          {/* Background glow - reduced size */}
-          <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-xl blur-xl" />
-          <div className="relative bg-white/90 backdrop-blur-xl rounded-lg border border-white/60 p-4">
+        <Paper elevation={10} className="w-full">
+          <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-white/60 p-4">
+            <motion.div
+              className="relative"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              {/* Background glow - reduced size */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-xl blur-xl" />
+              <div className="relative">
             {/* Header - more compact */}
             <div className="text-center mb-4">
               <motion.div className="flex items-center justify-center space-x-1.5 mb-2">
@@ -242,7 +245,7 @@ export default function LiveDemoAutoplay() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                       >
-                        {JSON.stringify(currentScenario.systemOutput, null, 2)}
+                        {currentScenario ? JSON.stringify(currentScenario.systemOutput, null, 2) : ''}
                       </motion.pre>
                     </div>
                   </motion.div>
@@ -281,16 +284,18 @@ export default function LiveDemoAutoplay() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                       >
-                        {JSON.stringify(currentScenario.fhirOutput, null, 2)}
+                        {currentScenario?.fhirOutput ? JSON.stringify(currentScenario.fhirOutput, null, 2) : ''}
                       </motion.pre>
                     </div>
                   </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
+              </div>
+            </motion.div>
           </div>
-        </motion.div>
+        </Paper>
       </div>
-    </section>
+    </div>
   );
 }
