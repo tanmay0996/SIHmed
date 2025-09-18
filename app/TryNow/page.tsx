@@ -113,7 +113,7 @@ export default function LiveDemoAutoplay() {
         highest_confidence: Math.max(...matches.map(m => m.confidenceScore)),
         systems_with_mappings: matches.filter(m => m.tm2Mapping).length,
         primary_categories: [...new Set(matches.map(m => 
-          m.tm2Mapping?.display.split(' ')[0] || 'Other'
+          m.tm2Mapping?.display?.split(' ')[0] || 'Other'
         ))]
       }
     };
