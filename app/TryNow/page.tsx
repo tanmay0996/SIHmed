@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
+import { getMockData, ApiResponse } from '@/utils/mockData'; // Adjust path as needed
 
 interface Match {
   code: {
@@ -20,27 +21,6 @@ interface Match {
   };
   description?: string;
   confidenceScore: number;
-}
-
-interface ApiResponse {
-  resourceType: string;
-  id: string;
-  parameter: Array<{
-    name: string;
-    valueBoolean?: boolean;
-    valueInteger?: number;
-    part?: Array<{
-      name: string;
-      valueString?: string;
-      valueDecimal?: number;
-      part?: Array<{
-        name: string;
-        valueUri?: string;
-        valueCode?: string;
-        valueString?: string;
-      }>;
-    }>;
-  }>;
 }
 
 export default function LiveDemoAutoplay() {
@@ -112,7 +92,7 @@ export default function LiveDemoAutoplay() {
                      systemType === 'unani' ? 'Unani Medicine' :
                      systemType === 'homeopathy' ? 'Homeopathy' : systemType,
         codes: systemMatches.map(match => ({
-          namaste_code: match.code.code,
+          Ayurveda_code: match.code.code,
           display_name: match.code.display,
           description: match.description || `${systemType} medicine classification`,
           confidence_score: Math.round(match.confidenceScore * 100) / 100,
@@ -143,7 +123,7 @@ export default function LiveDemoAutoplay() {
     return {
       resourceType: "CodeSystem",
       id: `lookup-result-${inputValue}`,
-      url: "http://terminology.hl7.org.in/CodeSystem/namaste",
+      url: "http://terminology.hl7.org.in/CodeSystem/Ayurveda",
       status: "active",
       content: "complete",
       count: matches.length,
@@ -191,325 +171,6 @@ export default function LiveDemoAutoplay() {
           }
         ]
       }
-    };
-  };
-
-  // Mock data for demo (API not hosted yet)
-  const getMockData = (code: string): ApiResponse => {
-    const mockResponses: Record<string, ApiResponse> = {
-      'AAA': {
-        "resourceType": "Parameters",
-        "id": "search-by-code-result-AAA",
-        "parameter": [
-          {
-            "name": "result",
-            "valueBoolean": true
-          },
-          {
-            "name": "totalMatches",
-            "valueInteger": 3
-          },
-          {
-            "name": "match",
-            "part": [
-              {
-                "name": "code",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "AAA"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Vaḷi"
-                  }
-                ]
-              },
-              {
-                "name": "type",
-                "valueString": "siddha"
-              },
-              {
-                "name": "tm2Mapping",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://id.who.int/icd/release/11/tm2"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "SM0Z"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Heart, blood and circulatory disorders (TM2), unspecified"
-                  },
-                  {
-                    "name": "definition",
-                    "valueString": "This category is an 'unspecified' residual category"
-                  },
-                  {
-                    "name": "link",
-                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#604042066/unspecified"
-                  }
-                ]
-              },
-              {
-                "name": "description",
-                "valueString": "Hepatic disease classified under vali humour"
-              },
-              {
-                "name": "confidenceScore",
-                "valueDecimal": 0.7550459504127502
-              }
-            ]
-          },
-          {
-            "name": "match",
-            "part": [
-              {
-                "name": "code",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "A-1.2"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Vata-vikara"
-                  }
-                ]
-              },
-              {
-                "name": "type",
-                "valueString": "ayurveda"
-              },
-              {
-                "name": "tm2Mapping",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://id.who.int/icd/release/11/tm2"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "SK5Z"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Head, brain, nerve and movement disorders (TM2), unspecified"
-                  },
-                  {
-                    "name": "definition",
-                    "valueString": "This category is an 'unspecified' residual category"
-                  },
-                  {
-                    "name": "link",
-                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#627880448/unspecified"
-                  }
-                ]
-              },
-              {
-                "name": "description",
-                "valueString": "Vata dosha imbalance affecting nervous system"
-              },
-              {
-                "name": "confidenceScore",
-                "valueDecimal": 0.7304397225379944
-              }
-            ]
-          },
-          {
-            "name": "match",
-            "part": [
-              {
-                "name": "code",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "U-3.1"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Dam-e-Sauda"
-                  }
-                ]
-              },
-              {
-                "name": "type",
-                "valueString": "unani"
-              },
-              {
-                "name": "tm2Mapping",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://id.who.int/icd/release/11/tm2"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "SP4Y"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Other specified bone, joint and muscle disorders (TM2)"
-                  },
-                  {
-                    "name": "definition",
-                    "valueString": "This category is an 'other specified' residual category"
-                  },
-                  {
-                    "name": "link",
-                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#1324098793/other"
-                  }
-                ]
-              },
-              {
-                "name": "description",
-                "valueString": "Blood stasis disorder in Unani medicine"
-              },
-              {
-                "name": "confidenceScore",
-                "valueDecimal": 0.6863315105438232
-              }
-            ]
-          }
-        ]
-      },
-      'SL20': {
-        "resourceType": "Parameters",
-        "id": "search-by-code-result-SL20",
-        "parameter": [
-          {
-            "name": "result",
-            "valueBoolean": true
-          },
-          {
-            "name": "totalMatches",
-            "valueInteger": 2
-          },
-          {
-            "name": "match",
-            "part": [
-              {
-                "name": "code",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "I-1.5"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "kaPaja-pratiSyAyaH"
-                  }
-                ]
-              },
-              {
-                "name": "type",
-                "valueString": "ayurveda"
-              },
-              {
-                "name": "tm2Mapping",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://id.who.int/icd/release/11/tm2"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "SL20"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Excessive sneezing disorder (TM2)"
-                  },
-                  {
-                    "name": "definition",
-                    "valueString": "Disorder characterized by excessive sneezing"
-                  },
-                  {
-                    "name": "link",
-                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#SL20"
-                  }
-                ]
-              },
-              {
-                "name": "description",
-                "valueString": "Kapha dosha related sneezing disorder"
-              },
-              {
-                "name": "confidenceScore",
-                "valueDecimal": 1.0
-              }
-            ]
-          },
-          {
-            "name": "match",
-            "part": [
-              {
-                "name": "code",
-                "part": [
-                  {
-                    "name": "system",
-                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
-                  },
-                  {
-                    "name": "code",
-                    "valueCode": "U-2.3"
-                  },
-                  {
-                    "name": "display",
-                    "valueString": "Nazla-e-Har"
-                  }
-                ]
-              },
-              {
-                "name": "type",
-                "valueString": "unani"
-              },
-              {
-                "name": "description",
-                "valueString": "Unani medicine term for nasal discharge and sneezing"
-              },
-              {
-                "name": "confidenceScore",
-                "valueDecimal": 0.85
-              }
-            ]
-          }
-        ]
-      }
-    };
-    
-    return mockResponses[code.toUpperCase()] || {
-      "resourceType": "Parameters",
-      "id": "search-by-code-result-notfound",
-      "parameter": [
-        {
-          "name": "result",
-          "valueBoolean": false
-        },
-        {
-          "name": "totalMatches",
-          "valueInteger": 0
-        }
-      ]
     };
   };
 
@@ -593,7 +254,7 @@ export default function LiveDemoAutoplay() {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Try: AAA or SL20 (mock data available)"
+                    placeholder="Try: EJC or SN4T (mock data available)"
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-md bg-white/80 backdrop-blur-sm font-mono min-h-[36px]"
                   />
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -733,7 +394,7 @@ export default function LiveDemoAutoplay() {
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center space-x-2 mb-1">
                                           <span className="text-sm font-mono font-bold text-slate-800">
-                                            {code.namaste_code}
+                                            {code.Ayurveda_code}
                                           </span>
                                           <div className="flex items-center space-x-1">
                                             <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>

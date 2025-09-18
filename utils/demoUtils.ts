@@ -7,28 +7,47 @@ export const PAUSE_BETWEEN_SCENARIOS = 2000; // ms
 export const scenarios = [
   {
     id: 'tm2-code',
-    userInput: 'Code: AAA',
+    userInput: 'Code: SN9Z',
     systemOutput: {
       input_type: "code_lookup",
-      input_value: "AAA",
+      input_value: "SN9Z",
       total_matches: 3,
-      systems_found: ["siddha", "ayurveda", "unani"],
+      systems_found: ["unani", "siddha", "ayurveda"],
       matches: [
+        {
+          system_type: "unani",
+          system_name: "Unani Medicine",
+          codes: [
+            {
+              namaste_code: "P-3",
+              display_name: "Amrāḍ Ẓāhira",
+              description: "the diseases which appear externally on the body the diseases which appear externally on the body and can be diagnosed commonly by general physical examination e.g. diseases of skin, nails, hair etc.",
+              confidence_score: 0.9089845418930054,
+              tm2_mapping: {
+                code: "SN9Z",
+                display: "Skin, nail and hair disorders (TM2), unspecified",
+                definition: "This category is an 'unspecified' residual category",
+                category: "Skin",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1367002461/unspecified"
+              }
+            }
+          ]
+        },
         {
           system_type: "siddha",
           system_name: "Siddha Medicine",
           codes: [
             {
-              namaste_code: "AAA",
-              display_name: "Vaḷi",
-              description: "Hepatic disease classified under vali humour",
-              confidence_score: 0.76,
+              namaste_code: "BUB1.2",
+              display_name: "Tēmal",
+              description: "Tinea versicolor It is characterised by round or other shaped patches on the skin that may be lighter or darker in colour. Patches may appear anywhere on the body, they may be itchy, dry and scaly. It is explained by increased vali which is followed by Aẕal. Among the s",
+              confidence_score: 0.8827083110809326,
               tm2_mapping: {
-                code: "SM0Z",
-                display: "Heart, blood and circulatory disorders (TM2), unspecified",
+                code: "SN9Z",
+                display: "Skin, nail and hair disorders (TM2), unspecified",
                 definition: "This category is an 'unspecified' residual category",
-                category: "Cardiovascular",
-                icd_link: "https://icd.who.int/browse/2025-01/mms/en#604042066/unspecified"
+                category: "Skin",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1367002461/unspecified"
               }
             }
           ]
@@ -38,58 +57,62 @@ export const scenarios = [
           system_name: "Ayurveda",
           codes: [
             {
-              namaste_code: "A-1.2",
-              display_name: "Vata-vikara",
-              description: "Vata dosha imbalance affecting nervous system",
-              confidence_score: 0.73,
+              namaste_code: "AAD-1.2",
+              display_name: "vyAnAvRutaprANavAtaH",
+              description: "the disorder is characterized by svēdōऽtyartham [excessive sweating], lōmaharṣaḥ [horripilation], tvagdōṣaḥ [skin diseases], suptagātratā [numbness in the body parts]",
+              confidence_score: 0.6655468940734863,
               tm2_mapping: {
-                code: "SK5Z",
-                display: "Head, brain, nerve and movement disorders (TM2), unspecified",
+                code: "SN9Z",
+                display: "Skin, nail and hair disorders (TM2), unspecified",
                 definition: "This category is an 'unspecified' residual category",
-                category: "Neurological",
-                icd_link: "https://icd.who.int/browse/2025-01/mms/en#627880448/unspecified"
-              }
-            }
-          ]
-        },
-        {
-          system_type: "unani",
-          system_name: "Unani Medicine",
-          codes: [
-            {
-              namaste_code: "U-3.1",
-              display_name: "Dam-e-Sauda",
-              description: "Blood stasis disorder in Unani medicine",
-              confidence_score: 0.69,
-              tm2_mapping: {
-                code: "SP4Y",
-                display: "Other specified bone, joint and muscle disorders (TM2)",
-                definition: "This category is an 'other specified' residual category",
-                category: "Musculoskeletal",
-                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1324098793/other"
+                category: "Skin",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1367002461/unspecified"
               }
             }
           ]
         }
       ],
       cross_system_analysis: {
-        highest_confidence: 0.76,
+        highest_confidence: 0.9089845418930054,
         systems_with_mappings: 3,
-        primary_categories: ["Heart", "Head", "Other"]
+        primary_categories: ["Skin", "Skin", "Skin"]
       }
     },
     fhirOutput: {
       resourceType: "CodeSystem",
-      id: "lookup-result-AAA",
+      id: "lookup-result-SN9Z",
       url: "http://terminology.hl7.org.in/CodeSystem/namaste",
       status: "active",
       content: "complete",
       count: 3,
       concept: [
         {
-          code: "AAA",
-          display: "Vaḷi",
-          definition: "Hepatic disease classified under vali humour",
+          code: "P-3",
+          display: "Amrāḍ Ẓāhira",
+          definition: "the diseases which appear externally on the body the diseases which appear externally on the body and can be diagnosed commonly by general physical examination e.g. diseases of skin, nails, hair etc.",
+          property: [
+            {
+              code: "system-type",
+              valueString: "unani"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 0.9089845418930054
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SN9Z",
+                display: "Skin, nail and hair disorders (TM2), unspecified"
+              }
+            }
+          ]
+        },
+        {
+          code: "BUB1.2",
+          display: "Tēmal",
+          definition: "Tinea versicolor It is characterised by round or other shaped patches on the skin that may be lighter or darker in colour. Patches may appear anywhere on the body, they may be itchy, dry and scaly. It is explained by increased vali which is followed by Aẕal. Among the s",
           property: [
             {
               code: "system-type",
@@ -97,22 +120,22 @@ export const scenarios = [
             },
             {
               code: "confidence",
-              valueDecimal: 0.76
+              valueDecimal: 0.8827083110809326
             },
             {
               code: "tm2-mapping",
               valueCoding: {
                 system: "http://id.who.int/icd/release/11/tm2",
-                code: "SM0Z",
-                display: "Heart, blood and circulatory disorders (TM2), unspecified"
+                code: "SN9Z",
+                display: "Skin, nail and hair disorders (TM2), unspecified"
               }
             }
           ]
         },
         {
-          code: "A-1.2",
-          display: "Vata-vikara",
-          definition: "Vata dosha imbalance affecting nervous system",
+          code: "AAD-1.2",
+          display: "vyAnAvRutaprANavAtaH",
+          definition: "the disorder is characterized by svēdōऽtyartham [excessive sweating], lōmaharṣaḥ [horripilation], tvagdōṣaḥ [skin diseases], suptagātratā [numbness in the body parts]",
           property: [
             {
               code: "system-type",
@@ -120,37 +143,14 @@ export const scenarios = [
             },
             {
               code: "confidence",
-              valueDecimal: 0.73
+              valueDecimal: 0.6655468940734863
             },
             {
               code: "tm2-mapping",
               valueCoding: {
                 system: "http://id.who.int/icd/release/11/tm2",
-                code: "SK5Z",
-                display: "Head, brain, nerve and movement disorders (TM2), unspecified"
-              }
-            }
-          ]
-        },
-        {
-          code: "U-3.1",
-          display: "Dam-e-Sauda",
-          definition: "Blood stasis disorder in Unani medicine",
-          property: [
-            {
-              code: "system-type",
-              valueString: "unani"
-            },
-            {
-              code: "confidence",
-              valueDecimal: 0.69
-            },
-            {
-              code: "tm2-mapping",
-              valueCoding: {
-                system: "http://id.who.int/icd/release/11/tm2",
-                code: "SP4Y",
-                display: "Other specified bone, joint and muscle disorders (TM2)"
+                code: "SN9Z",
+                display: "Skin, nail and hair disorders (TM2), unspecified"
               }
             }
           ]
@@ -158,8 +158,8 @@ export const scenarios = [
       ],
       lookup: {
         system: "http://terminology.hl7.org.in/CodeSystem/namaste",
-        code: "AAA",
-        display: "Vaḷi",
+        code: "SN9Z",
+        display: "Amrāḍ Ẓāhira",
         property: [
           {
             code: "total-matches",
@@ -167,11 +167,11 @@ export const scenarios = [
           },
           {
             code: "primary-system",
-            valueString: "siddha"
+            valueString: "unani"
           },
           {
             code: "highest-confidence",
-            valueDecimal: 0.76
+            valueDecimal: 0.9089845418930054
           }
         ]
       }
@@ -179,87 +179,89 @@ export const scenarios = [
   },
   {
     id: 'symptoms',
-    userInput: 'Code: SL20',
+    userInput: 'Code: SR1L',
     systemOutput: {
       input_type: "code_lookup",
-      input_value: "SL20",
-      total_matches: 2,
-      systems_found: ["ayurveda", "unani"],
+      input_value: "SR1L",
+      total_matches: 3,
+      systems_found: ["unani", "siddha", "ayurveda"],
       matches: [
-        {
-          system_type: "ayurveda",
-          system_name: "Ayurveda",
-          codes: [
-            {
-              namaste_code: "I-1.5",
-              display_name: "kaPaja-pratiSyAyaH",
-              description: "Kapha dosha related sneezing disorder",
-              confidence_score: 1.0,
-              tm2_mapping: {
-                code: "SL20",
-                display: "Excessive sneezing disorder (TM2)",
-                definition: "Disorder characterized by excessive sneezing",
-                category: "Respiratory",
-                icd_link: "https://icd.who.int/browse/2025-01/mms/en#SL20"
-              }
-            }
-          ]
-        },
         {
           system_type: "unani",
           system_name: "Unani Medicine",
           codes: [
             {
-              namaste_code: "U-2.3",
-              display_name: "Nazla-e-Har",
-              description: "Unani medicine term for nasal discharge and sneezing",
-              confidence_score: 0.85,
-              tm2_mapping: null
-            }
-          ]
-        }
-      ],
-      cross_system_analysis: {
-        highest_confidence: 1.0,
-        systems_with_mappings: 1,
-        primary_categories: ["Excessive", "Nazla-e-Har"]
-      }
-    },
-    fhirOutput: {
-      resourceType: "CodeSystem",
-      id: "lookup-result-SL20",
-      url: "http://terminology.hl7.org.in/CodeSystem/namaste",
-      status: "active",
-      content: "complete",
-      count: 2,
-      concept: [
-        {
-          code: "I-1.5",
-          display: "kaPaja-pratiSyAyaH",
-          definition: "Kapha dosha related sneezing disorder",
-          property: [
-            {
-              code: "system-type",
-              valueString: "ayurveda"
-            },
-            {
-              code: "confidence",
-              valueDecimal: 1.0
-            },
-            {
-              code: "tm2-mapping",
-              valueCoding: {
-                system: "http://id.who.int/icd/release/11/tm2",
-                code: "SL20",
-                display: "Excessive sneezing disorder (TM2)"
+              namaste_code: "F-112",
+              display_name: "Tashaḥḥum-i-Kabid Ghayr Khamrī",
+              description: "Non-Alcoholic Fatty Liver Disease A condition in which excess fat builds up in the liver. It is not associated with heavy intake of alcohol and is caused by cold and moist morbid temperament of liver associated with accumulation of phlegm in liver. It is characterised by heaviness and pain at the site of liver, nausea, loss of appetite, etc.",
+              confidence_score: 0.8589949011802673,
+              tm2_mapping: {
+                code: "SR1L",
+                display: "Decrease of Aiyam pattern (TM2)",
+                definition: "It is characterised by giddiness, weakness of joints due to the loss of synovial fluid, and the apparent projection of the bones, diminution of phlegm in the chest, there will be feeling of emptiness inside the lung field, sweating of hair follicles and palpitations. \nThis may be explained by disequilibrium or the morbid decrease of Aiyam and consequent physiological and pathological ramifications.",
+                category: "Pattern",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1600352288"
               }
             }
           ]
         },
         {
-          code: "U-2.3",
-          display: "Nazla-e-Har",
-          definition: "Unani medicine term for nasal discharge and sneezing",
+          system_type: "siddha",
+          system_name: "Siddha Medicine",
+          codes: [
+            {
+              namaste_code: "RHC1.1",
+              display_name: "Nīr Maṇṭai Kaṉappu",
+              description: "Heaviness of the head due increasing Aiyam It is characterized by heaviness in head associated with hair loss, head ache. It is explained by increased aiyam. Among the seven Uṭaṟtātukkaḷ Cāram and Cennīr gets affected.",
+              confidence_score: 0.874448299407959,
+              tm2_mapping: {
+                code: "SR1L",
+                display: "Decrease of Aiyam pattern (TM2)",
+                definition: "It is characterised by giddiness, weakness of joints due to the loss of synovial fluid, and the apparent projection of the bones, diminution of phlegm in the chest, there will be feeling of emptiness inside the lung field, sweating of hair follicles and palpitations. \nThis may be explained by disequilibrium or the morbid decrease of Aiyam and consequent physiological and pathological ramifications.",
+                category: "Pattern",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1600352288"
+              }
+            }
+          ]
+        },
+        {
+          system_type: "ayurveda",
+          system_name: "Ayurveda",
+          codes: [
+            {
+              namaste_code: "SR46(BC-1)",
+              display_name: "mAMsakShayaH",
+              description: "It is characterized by wasting of hips, wasting of neck, wasting of abdomen, wasting of cheeks, whole side of the face including the temple, wasting, dryness of lips, wasting, dryness of genitals, penis, wasting of thighs, wasting of chest, wasting of armpits, axilla, wasting of calf, dryness, pricking pain, exhaustion or tiredness of body, flabbiness of arteries, lazy eyes, eye fatigue, splitting type of pain in joints and weakness of five vital senses. (a) This may be explained by morbid decrease of muscle tissue.",
+              confidence_score: 0.7111557126045227,
+              tm2_mapping: {
+                code: "SR1L",
+                display: "Decrease of Aiyam pattern (TM2)",
+                definition: "It is characterised by giddiness, weakness of joints due to the loss of synovial fluid, and the apparent projection of the bones, diminution of phlegm in the chest, there will be feeling of emptiness inside the lung field, sweating of hair follicles and palpitations. \nThis may be explained by disequilibrium or the morbid decrease of Aiyam and consequent physiological and pathological ramifications.",
+                category: "Pattern",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1600352288"
+              }
+            }
+          ]
+        }
+      ],
+      cross_system_analysis: {
+        highest_confidence: 0.874448299407959,
+        systems_with_mappings: 3,
+        primary_categories: ["Decrease", "Decrease", "Decrease"]
+      }
+    },
+    fhirOutput: {
+      resourceType: "CodeSystem",
+      id: "lookup-result-SR1L",
+      url: "http://terminology.hl7.org.in/CodeSystem/namaste",
+      status: "active",
+      content: "complete",
+      count: 3,
+      concept: [
+        {
+          code: "F-112",
+          display: "Tashaḥḥum-i-Kabid Ghayr Khamrī",
+          definition: "Non-Alcoholic Fatty Liver Disease A condition in which excess fat builds up in the liver. It is not associated with heavy intake of alcohol and is caused by cold and moist morbid temperament of liver associated with accumulation of phlegm in liver. It is characterised by heaviness and pain at the site of liver, nausea, loss of appetite, etc.",
           property: [
             {
               code: "system-type",
@@ -267,27 +269,81 @@ export const scenarios = [
             },
             {
               code: "confidence",
-              valueDecimal: 0.85
+              valueDecimal: 0.8589949011802673
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SR1L",
+                display: "Decrease of Aiyam pattern (TM2)"
+              }
+            }
+          ]
+        },
+        {
+          code: "RHC1.1",
+          display: "Nīr Maṇṭai Kaṉappu",
+          definition: "Heaviness of the head due increasing Aiyam It is characterized by heaviness in head associated with hair loss, head ache. It is explained by increased aiyam. Among the seven Uṭaṟtātukkaḷ Cāram and Cennīr gets affected.",
+          property: [
+            {
+              code: "system-type",
+              valueString: "siddha"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 0.874448299407959
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SR1L",
+                display: "Decrease of Aiyam pattern (TM2)"
+              }
+            }
+          ]
+        },
+        {
+          code: "SR46(BC-1)",
+          display: "mAMsakShayaH",
+          definition: "It is characterized by wasting of hips, wasting of neck, wasting of abdomen, wasting of cheeks, whole side of the face including the temple, wasting, dryness of lips, wasting, dryness of genitals, penis, wasting of thighs, wasting of chest, wasting of armpits, axilla, wasting of calf, dryness, pricking pain, exhaustion or tiredness of body, flabbiness of arteries, lazy eyes, eye fatigue, splitting type of pain in joints and weakness of five vital senses. (a) This may be explained by morbid decrease of muscle tissue.",
+          property: [
+            {
+              code: "system-type",
+              valueString: "ayurveda"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 0.7111557126045227
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SR1L",
+                display: "Decrease of Aiyam pattern (TM2)"
+              }
             }
           ]
         }
       ],
       lookup: {
         system: "http://terminology.hl7.org.in/CodeSystem/namaste",
-        code: "SL20",
-        display: "kaPaja-pratiSyAyaH",
+        code: "SR1L",
+        display: "Tashaḥḥum-i-Kabid Ghayr Khamrī",
         property: [
           {
             code: "total-matches",
-            valueInteger: 2
+            valueInteger: 3
           },
           {
             code: "primary-system",
-            valueString: "ayurveda"
+            valueString: "unani"
           },
           {
             code: "highest-confidence",
-            valueDecimal: 1.0
+            valueDecimal: 0.874448299407959
           }
         ]
       }
