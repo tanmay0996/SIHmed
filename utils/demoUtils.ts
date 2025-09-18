@@ -7,39 +7,171 @@ export const PAUSE_BETWEEN_SCENARIOS = 2000; // ms
 export const scenarios = [
   {
     id: 'tm2-code',
-    userInput: 'Code: SL20',
+    userInput: 'Code: AAA',
     systemOutput: {
-      input_type: "tm2_code",
-      input_value: "SL20",
+      input_type: "code_lookup",
+      input_value: "AAA",
+      total_matches: 3,
+      systems_found: ["siddha", "ayurveda", "unani"],
       matches: [
         {
-          tm2_code: "SL20",
-          tm2_title: "Excessive sneezing disorder (TM2)",
-          matched_namaste_codes: [
+          system_type: "siddha",
+          system_name: "Siddha Medicine",
+          codes: [
             {
-              code: "I-1.5",
-              term: "kaPaja-pratiSyAyaH",
-              confidence: 1.0,
-              dosha: "Kapha"
+              namaste_code: "AAA",
+              display_name: "Vaḷi",
+              description: "Hepatic disease classified under vali humour",
+              confidence_score: 0.76,
+              tm2_mapping: {
+                code: "SM0Z",
+                display: "Heart, blood and circulatory disorders (TM2), unspecified",
+                definition: "This category is an 'unspecified' residual category",
+                category: "Cardiovascular",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#604042066/unspecified"
+              }
+            }
+          ]
+        },
+        {
+          system_type: "ayurveda",
+          system_name: "Ayurveda",
+          codes: [
+            {
+              namaste_code: "A-1.2",
+              display_name: "Vata-vikara",
+              description: "Vata dosha imbalance affecting nervous system",
+              confidence_score: 0.73,
+              tm2_mapping: {
+                code: "SK5Z",
+                display: "Head, brain, nerve and movement disorders (TM2), unspecified",
+                definition: "This category is an 'unspecified' residual category",
+                category: "Neurological",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#627880448/unspecified"
+              }
+            }
+          ]
+        },
+        {
+          system_type: "unani",
+          system_name: "Unani Medicine",
+          codes: [
+            {
+              namaste_code: "U-3.1",
+              display_name: "Dam-e-Sauda",
+              description: "Blood stasis disorder in Unani medicine",
+              confidence_score: 0.69,
+              tm2_mapping: {
+                code: "SP4Y",
+                display: "Other specified bone, joint and muscle disorders (TM2)",
+                definition: "This category is an 'other specified' residual category",
+                category: "Musculoskeletal",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#1324098793/other"
+              }
             }
           ]
         }
-      ]
+      ],
+      cross_system_analysis: {
+        highest_confidence: 0.76,
+        systems_with_mappings: 3,
+        primary_categories: ["Heart", "Head", "Other"]
+      }
     },
     fhirOutput: {
       resourceType: "CodeSystem",
+      id: "lookup-result-AAA",
+      url: "http://terminology.hl7.org.in/CodeSystem/namaste",
+      status: "active",
+      content: "complete",
+      count: 3,
+      concept: [
+        {
+          code: "AAA",
+          display: "Vaḷi",
+          definition: "Hepatic disease classified under vali humour",
+          property: [
+            {
+              code: "system-type",
+              valueString: "siddha"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 0.76
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SM0Z",
+                display: "Heart, blood and circulatory disorders (TM2), unspecified"
+              }
+            }
+          ]
+        },
+        {
+          code: "A-1.2",
+          display: "Vata-vikara",
+          definition: "Vata dosha imbalance affecting nervous system",
+          property: [
+            {
+              code: "system-type",
+              valueString: "ayurveda"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 0.73
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SK5Z",
+                display: "Head, brain, nerve and movement disorders (TM2), unspecified"
+              }
+            }
+          ]
+        },
+        {
+          code: "U-3.1",
+          display: "Dam-e-Sauda",
+          definition: "Blood stasis disorder in Unani medicine",
+          property: [
+            {
+              code: "system-type",
+              valueString: "unani"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 0.69
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SP4Y",
+                display: "Other specified bone, joint and muscle disorders (TM2)"
+              }
+            }
+          ]
+        }
+      ],
       lookup: {
-        system: "http://terminology.hl7.org/CodeSystem/tm2-ayurveda",
-        code: "SL20",
-        display: "Excessive sneezing disorder (TM2)",
+        system: "http://terminology.hl7.org.in/CodeSystem/namaste",
+        code: "AAA",
+        display: "Vaḷi",
         property: [
           {
-            code: "mapped-to-namaste",
-            valueCode: "I-1.5"
+            code: "total-matches",
+            valueInteger: 3
           },
           {
-            code: "confidence",
-            valueDecimal: 1.0
+            code: "primary-system",
+            valueString: "siddha"
+          },
+          {
+            code: "highest-confidence",
+            valueDecimal: 0.76
           }
         ]
       }
@@ -47,59 +179,118 @@ export const scenarios = [
   },
   {
     id: 'symptoms',
-    userInput: 'Symptoms: excessive sneezing, runny nose, nasal congestion',
+    userInput: 'Code: SL20',
     systemOutput: {
-      input_type: "symptoms",
-      input_value: "excessive sneezing, runny nose, nasal congestion",
-      suggested_codes: [
+      input_type: "code_lookup",
+      input_value: "SL20",
+      total_matches: 2,
+      systems_found: ["ayurveda", "unani"],
+      matches: [
         {
-          tm2_matches: [
+          system_type: "ayurveda",
+          system_name: "Ayurveda",
+          codes: [
             {
-              code: "SL20",
-              title: "Excessive sneezing disorder (TM2)",
-              symptom_match_score: 0.85,
-              doshas: ["Vata", "Kapha"]
+              namaste_code: "I-1.5",
+              display_name: "kaPaja-pratiSyAyaH",
+              description: "Kapha dosha related sneezing disorder",
+              confidence_score: 1.0,
+              tm2_mapping: {
+                code: "SL20",
+                display: "Excessive sneezing disorder (TM2)",
+                definition: "Disorder characterized by excessive sneezing",
+                category: "Respiratory",
+                icd_link: "https://icd.who.int/browse/2025-01/mms/en#SL20"
+              }
             }
-          ],
-          namaste_matches: [
+          ]
+        },
+        {
+          system_type: "unani",
+          system_name: "Unani Medicine",
+          codes: [
             {
-              code: "I-1.5",
-              term: "kaPaja-pratiSyAyaH",
-              symptom_match_score: 0.78,
-              dosha: "Kapha"
+              namaste_code: "U-2.3",
+              display_name: "Nazla-e-Har",
+              description: "Unani medicine term for nasal discharge and sneezing",
+              confidence_score: 0.85,
+              tm2_mapping: null
             }
           ]
         }
-      ]
+      ],
+      cross_system_analysis: {
+        highest_confidence: 1.0,
+        systems_with_mappings: 1,
+        primary_categories: ["Excessive", "Nazla-e-Har"]
+      }
     },
     fhirOutput: {
-      resourceType: "Condition",
-      id: "symptom-based-condition",
-      code: {
-        coding: [
-          {
-            system: "http://terminology.hl7.org/CodeSystem/tm2-ayurveda",
-            code: "SL20",
-            display: "Excessive sneezing disorder (TM2)"
-          }
-        ],
-        text: "Excessive sneezing with nasal congestion"
-      },
-      evidence: [
+      resourceType: "CodeSystem",
+      id: "lookup-result-SL20",
+      url: "http://terminology.hl7.org.in/CodeSystem/namaste",
+      status: "active",
+      content: "complete",
+      count: 2,
+      concept: [
         {
-          code: [
+          code: "I-1.5",
+          display: "kaPaja-pratiSyAyaH",
+          definition: "Kapha dosha related sneezing disorder",
+          property: [
             {
-              coding: [
-                {
-                  system: "http://snomed.info/sct",
-                  code: "162367006",
-                  display: "Sneezing"
-                }
-              ]
+              code: "system-type",
+              valueString: "ayurveda"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 1.0
+            },
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: "http://id.who.int/icd/release/11/tm2",
+                code: "SL20",
+                display: "Excessive sneezing disorder (TM2)"
+              }
+            }
+          ]
+        },
+        {
+          code: "U-2.3",
+          display: "Nazla-e-Har",
+          definition: "Unani medicine term for nasal discharge and sneezing",
+          property: [
+            {
+              code: "system-type",
+              valueString: "unani"
+            },
+            {
+              code: "confidence",
+              valueDecimal: 0.85
             }
           ]
         }
-      ]
+      ],
+      lookup: {
+        system: "http://terminology.hl7.org.in/CodeSystem/namaste",
+        code: "SL20",
+        display: "kaPaja-pratiSyAyaH",
+        property: [
+          {
+            code: "total-matches",
+            valueInteger: 2
+          },
+          {
+            code: "primary-system",
+            valueString: "ayurveda"
+          },
+          {
+            code: "highest-confidence",
+            valueDecimal: 1.0
+          }
+        ]
+      }
     }
   }
 ];

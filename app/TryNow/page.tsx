@@ -2,122 +2,549 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Loader2, ArrowRight } from 'lucide-react';
-import { Paper, Box } from '@mui/material';
+import { Search, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
 
-// Demo scenarios data
-const scenarios = [
-  {
-    id: 'tm2-code',
-    userInput: 'Code: SL20',
-    systemOutput: {
-      input_type: "tm2_code",
-      input_value: "SL20",
-      matches: [
-        {
-          tm2_code: "SL20",
-          tm2_title: "Excessive sneezing disorder (TM2)",
-          matched_namaste_codes: [
-            {
-              code: "I-1.5",
-              term: "kaPaja-pratiSyAyaH",
-              confidence: 1.0,
-              dosha: "Kapha"
-            }
-          ]
-        }
-      ]
-    },
-    fhirOutput: {
-      resourceType: "CodeSystem",
-      lookup: {
-        system: "http://terminology.hl7.org/CodeSystem/tm2-ayurveda",
-        code: "SL20",
-        display: "Excessive sneezing disorder (TM2)",
-        property: [
-          {
-            code: "mapped-to-namaste",
-            valueCode: "I-1.5"
-          },
-          {
-            code: "confidence",
-            valueDecimal: 1.0
-          }
-        ]
-      }
-    }
-  },
-  {
-    id: 'symptoms',
-    userInput: 'Symptoms: excessive sneezing, runny nose, nasal congestion',
-    systemOutput: {
-      input_type: "symptoms",
-      input_value: "excessive sneezing, runny nose, nasal congestion",
-      suggested_codes: [
-        {
-          tm2_matches: [
-            {
-              code: "SL20",
-              title: "Excessive sneezing disorder (TM2)",
-              symptom_match_score: 0.85,
-              doshas: ["Vata", "Kapha"]
-            }
-          ],
-          namaste_matches: [
-            {
-              code: "I-1.5",
-              term: "kaPaja-pratiSyAyaH",
-              symptom_match_score: 0.78,
-              dosha: "Kapha"
-            }
-          ]
-        }
-      ]
-    },
-    fhirOutput: {
-      resourceType: "Condition",
-      id: "symptom-based-condition",
-      code: {
-        coding: [
-          {
-            system: "http://terminology.hl7.org/CodeSystem/tm2-ayurveda",
-            code: "SL20",
-            display: "Excessive sneezing disorder (TM2)"
-          }
-        ],
-        text: "Excessive sneezing with nasal congestion"
-      },
-      evidence: [
-        {
-          code: [
-            {
-              coding: [
-                {
-                  system: "http://snomed.info/sct",
-                  code: "162367006",
-                  display: "Sneezing"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  }
-];
+interface Match {
+  code: {
+    system: string;
+    code: string;
+    display: string;
+  };
+  type: string;
+  tm2Mapping?: {
+    system: string;
+    code: string;
+    display: string;
+    definition: string;
+    link: string;
+  };
+  description?: string;
+  confidenceScore: number;
+}
+
+interface ApiResponse {
+  resourceType: string;
+  id: string;
+  parameter: Array<{
+    name: string;
+    valueBoolean?: boolean;
+    valueInteger?: number;
+    part?: Array<{
+      name: string;
+      valueString?: string;
+      valueDecimal?: number;
+      part?: Array<{
+        name: string;
+        valueUri?: string;
+        valueCode?: string;
+        valueString?: string;
+      }>;
+    }>;
+  }>;
+}
 
 export default function LiveDemoAutoplay() {
   const [inputValue, setInputValue] = useState('');
-  const [currentScenario, setCurrentScenario] = useState<any>(null);
+  const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = () => {
+  const parseApiResponse = (response: ApiResponse) => {
+    const matches: Match[] = [];
+    
+    response.parameter.forEach(param => {
+      if (param.name === 'match' && param.part) {
+        const match: Partial<Match> = {};
+        
+        param.part.forEach(part => {
+          if (part.name === 'code' && part.part) {
+            match.code = {
+              system: part.part.find(p => p.name === 'system')?.valueUri || '',
+              code: part.part.find(p => p.name === 'code')?.valueCode || '',
+              display: part.part.find(p => p.name === 'display')?.valueString || ''
+            };
+          } else if (part.name === 'type') {
+            match.type = part.valueString || '';
+          } else if (part.name === 'tm2Mapping' && part.part) {
+            match.tm2Mapping = {
+              system: part.part.find(p => p.name === 'system')?.valueUri || '',
+              code: part.part.find(p => p.name === 'code')?.valueCode || '',
+              display: part.part.find(p => p.name === 'display')?.valueString || '',
+              definition: part.part.find(p => p.name === 'definition')?.valueString || '',
+              link: part.part.find(p => p.name === 'link')?.valueUri || ''
+            };
+          } else if (part.name === 'description') {
+            match.description = part.valueString;
+          } else if (part.name === 'confidenceScore') {
+            match.confidenceScore = part.valueDecimal || 0;
+          }
+        });
+        
+        if (match.code && match.type !== undefined && match.confidenceScore !== undefined) {
+          matches.push(match as Match);
+        }
+      }
+    });
+    
+    return matches;
+  };
+
+  const generateSystemOutput = (matches: Match[]) => {
+    // Group matches by system type
+    const groupedMatches = matches.reduce((acc, match) => {
+      if (!acc[match.type]) {
+        acc[match.type] = [];
+      }
+      acc[match.type].push(match);
+      return acc;
+    }, {} as Record<string, Match[]>);
+
+    return {
+      input_type: "code_lookup",
+      input_value: inputValue,
+      total_matches: matches.length,
+      systems_found: Object.keys(groupedMatches),
+      matches: Object.entries(groupedMatches).map(([systemType, systemMatches]) => ({
+        system_type: systemType,
+        system_name: systemType === 'siddha' ? 'Siddha Medicine' : 
+                     systemType === 'ayurveda' ? 'Ayurveda' :
+                     systemType === 'unani' ? 'Unani Medicine' :
+                     systemType === 'homeopathy' ? 'Homeopathy' : systemType,
+        codes: systemMatches.map(match => ({
+          namaste_code: match.code.code,
+          display_name: match.code.display,
+          description: match.description || `${systemType} medicine classification`,
+          confidence_score: Math.round(match.confidenceScore * 100) / 100,
+          tm2_mapping: match.tm2Mapping ? {
+            code: match.tm2Mapping.code,
+            display: match.tm2Mapping.display,
+            definition: match.tm2Mapping.definition,
+            category: match.tm2Mapping.display.includes('Heart') ? 'Cardiovascular' :
+                     match.tm2Mapping.display.includes('Head') ? 'Neurological' :
+                     match.tm2Mapping.display.includes('bone') ? 'Musculoskeletal' : 'Other',
+            icd_link: match.tm2Mapping.link
+          } : null
+        }))
+      })),
+      cross_system_analysis: {
+        highest_confidence: Math.max(...matches.map(m => m.confidenceScore)),
+        systems_with_mappings: matches.filter(m => m.tm2Mapping).length,
+        primary_categories: [...new Set(matches.map(m => 
+          m.tm2Mapping?.display.split(' ')[0] || 'Other'
+        ))]
+      }
+    };
+  };
+
+  const generateFhirOutput = (matches: Match[]) => {
+    const primaryMatch = matches.sort((a, b) => b.confidenceScore - a.confidenceScore)[0];
+    
+    return {
+      resourceType: "CodeSystem",
+      id: `lookup-result-${inputValue}`,
+      url: "http://terminology.hl7.org.in/CodeSystem/namaste",
+      status: "active",
+      content: "complete",
+      count: matches.length,
+      concept: matches.map(match => ({
+        code: match.code.code,
+        display: match.code.display,
+        definition: match.description,
+        property: [
+          {
+            code: "system-type",
+            valueString: match.type
+          },
+          {
+            code: "confidence",
+            valueDecimal: match.confidenceScore
+          },
+          ...(match.tm2Mapping ? [
+            {
+              code: "tm2-mapping",
+              valueCoding: {
+                system: match.tm2Mapping.system,
+                code: match.tm2Mapping.code,
+                display: match.tm2Mapping.display
+              }
+            }
+          ] : [])
+        ]
+      })),
+      lookup: {
+        system: primaryMatch?.code.system,
+        code: inputValue,
+        display: primaryMatch?.code.display,
+        property: [
+          {
+            code: "total-matches",
+            valueInteger: matches.length
+          },
+          {
+            code: "primary-system",
+            valueString: primaryMatch?.type
+          },
+          {
+            code: "highest-confidence",
+            valueDecimal: primaryMatch?.confidenceScore
+          }
+        ]
+      }
+    };
+  };
+
+  // Mock data for demo (API not hosted yet)
+  const getMockData = (code: string): ApiResponse => {
+    const mockResponses: Record<string, ApiResponse> = {
+      'AAA': {
+        "resourceType": "Parameters",
+        "id": "search-by-code-result-AAA",
+        "parameter": [
+          {
+            "name": "result",
+            "valueBoolean": true
+          },
+          {
+            "name": "totalMatches",
+            "valueInteger": 3
+          },
+          {
+            "name": "match",
+            "part": [
+              {
+                "name": "code",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "AAA"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Vaḷi"
+                  }
+                ]
+              },
+              {
+                "name": "type",
+                "valueString": "siddha"
+              },
+              {
+                "name": "tm2Mapping",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://id.who.int/icd/release/11/tm2"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "SM0Z"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Heart, blood and circulatory disorders (TM2), unspecified"
+                  },
+                  {
+                    "name": "definition",
+                    "valueString": "This category is an 'unspecified' residual category"
+                  },
+                  {
+                    "name": "link",
+                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#604042066/unspecified"
+                  }
+                ]
+              },
+              {
+                "name": "description",
+                "valueString": "Hepatic disease classified under vali humour"
+              },
+              {
+                "name": "confidenceScore",
+                "valueDecimal": 0.7550459504127502
+              }
+            ]
+          },
+          {
+            "name": "match",
+            "part": [
+              {
+                "name": "code",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "A-1.2"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Vata-vikara"
+                  }
+                ]
+              },
+              {
+                "name": "type",
+                "valueString": "ayurveda"
+              },
+              {
+                "name": "tm2Mapping",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://id.who.int/icd/release/11/tm2"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "SK5Z"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Head, brain, nerve and movement disorders (TM2), unspecified"
+                  },
+                  {
+                    "name": "definition",
+                    "valueString": "This category is an 'unspecified' residual category"
+                  },
+                  {
+                    "name": "link",
+                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#627880448/unspecified"
+                  }
+                ]
+              },
+              {
+                "name": "description",
+                "valueString": "Vata dosha imbalance affecting nervous system"
+              },
+              {
+                "name": "confidenceScore",
+                "valueDecimal": 0.7304397225379944
+              }
+            ]
+          },
+          {
+            "name": "match",
+            "part": [
+              {
+                "name": "code",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "U-3.1"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Dam-e-Sauda"
+                  }
+                ]
+              },
+              {
+                "name": "type",
+                "valueString": "unani"
+              },
+              {
+                "name": "tm2Mapping",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://id.who.int/icd/release/11/tm2"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "SP4Y"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Other specified bone, joint and muscle disorders (TM2)"
+                  },
+                  {
+                    "name": "definition",
+                    "valueString": "This category is an 'other specified' residual category"
+                  },
+                  {
+                    "name": "link",
+                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#1324098793/other"
+                  }
+                ]
+              },
+              {
+                "name": "description",
+                "valueString": "Blood stasis disorder in Unani medicine"
+              },
+              {
+                "name": "confidenceScore",
+                "valueDecimal": 0.6863315105438232
+              }
+            ]
+          }
+        ]
+      },
+      'SL20': {
+        "resourceType": "Parameters",
+        "id": "search-by-code-result-SL20",
+        "parameter": [
+          {
+            "name": "result",
+            "valueBoolean": true
+          },
+          {
+            "name": "totalMatches",
+            "valueInteger": 2
+          },
+          {
+            "name": "match",
+            "part": [
+              {
+                "name": "code",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "I-1.5"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "kaPaja-pratiSyAyaH"
+                  }
+                ]
+              },
+              {
+                "name": "type",
+                "valueString": "ayurveda"
+              },
+              {
+                "name": "tm2Mapping",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://id.who.int/icd/release/11/tm2"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "SL20"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Excessive sneezing disorder (TM2)"
+                  },
+                  {
+                    "name": "definition",
+                    "valueString": "Disorder characterized by excessive sneezing"
+                  },
+                  {
+                    "name": "link",
+                    "valueUri": "https://icd.who.int/browse/2025-01/mms/en#SL20"
+                  }
+                ]
+              },
+              {
+                "name": "description",
+                "valueString": "Kapha dosha related sneezing disorder"
+              },
+              {
+                "name": "confidenceScore",
+                "valueDecimal": 1.0
+              }
+            ]
+          },
+          {
+            "name": "match",
+            "part": [
+              {
+                "name": "code",
+                "part": [
+                  {
+                    "name": "system",
+                    "valueUri": "http://terminology.hl7.org.in/CodeSystem/namaste"
+                  },
+                  {
+                    "name": "code",
+                    "valueCode": "U-2.3"
+                  },
+                  {
+                    "name": "display",
+                    "valueString": "Nazla-e-Har"
+                  }
+                ]
+              },
+              {
+                "name": "type",
+                "valueString": "unani"
+              },
+              {
+                "name": "description",
+                "valueString": "Unani medicine term for nasal discharge and sneezing"
+              },
+              {
+                "name": "confidenceScore",
+                "valueDecimal": 0.85
+              }
+            ]
+          }
+        ]
+      }
+    };
+    
+    return mockResponses[code.toUpperCase()] || {
+      "resourceType": "Parameters",
+      "id": "search-by-code-result-notfound",
+      "parameter": [
+        {
+          "name": "result",
+          "valueBoolean": false
+        },
+        {
+          "name": "totalMatches",
+          "valueInteger": 0
+        }
+      ]
+    };
+  };
+
+  const handleSubmit = async () => {
+    if (!inputValue.trim()) return;
+    
     setIsLoading(true);
+    setError(null);
     setIsFlipped(false);
-    const matched = scenarios.find(s => s.userInput.toLowerCase() === inputValue.toLowerCase().trim());
-    setCurrentScenario(matched || null);
-    setIsLoading(false);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    try {
+      // TODO: Replace with actual API call when hosted
+      // const response = await fetch(`http://localhost:8082/api/fhir/search/code/${inputValue.trim()}`);
+      // if (!response.ok) {
+      //   throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      // }
+      // const data: ApiResponse = await response.json();
+      
+      // Using mock data for now
+      const data: ApiResponse = getMockData(inputValue.trim());
+      
+      if (data.parameter.find(p => p.name === 'totalMatches')?.valueInteger === 0) {
+        throw new Error(`No matches found for code: ${inputValue.trim()}`);
+      }
+      
+      setApiResponse(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setApiResponse(null);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -126,175 +553,307 @@ export default function LiveDemoAutoplay() {
     }
   };
 
+  const matches = apiResponse ? parseApiResponse(apiResponse) : [];
+  const systemOutput = matches.length > 0 ? generateSystemOutput(matches) : null;
+  const fhirOutput = matches.length > 0 ? generateFhirOutput(matches) : null;
+
   return (
     <div className="py-8 bg-gradient-to-br from-slate-50/50 to-white">
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
-        <Paper elevation={10} className="w-full">
-          <div className="bg-white/90 backdrop-blur-xl rounded-lg border border-white/60 p-4">
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-            >
-              {/* Background glow - reduced size */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-xl blur-xl" />
-              <div className="relative">
-            {/* Header - more compact */}
-            <div className="text-center mb-4">
-              <motion.div className="flex items-center justify-center space-x-1.5 mb-2">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                <span className="text-xs font-semibold text-emerald-700">Try Now</span>
-              </motion.div>
-              
-              <h2 className="text-xl font-bold text-slate-800 mb-1">
-                Auto-Translation
-              </h2>
-              <p className="text-xs text-slate-600">
-                Ayush to FHIR mapping
-              </p>
-            </div>
-
-            {/* Search Interface - more compact */}
-            <div className="flex-1 relative mb-6">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Enter code or symptoms..."
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-md bg-white/80 backdrop-blur-sm font-mono min-h-[36px]"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-            </div>
-
-            {/* Loading Animation - more compact */}
-            <AnimatePresence>
-              {isLoading && (
-                <motion.div
-                  className="flex flex-col items-center justify-center py-6 space-y-1"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
-                  <p className="text-xs text-slate-600">Processing...</p>
-                  <div className="flex space-x-1">
-                    {[0, 1, 2].map((index) => (
-                      <motion.div
-                        key={index}
-                        className="w-1.5 h-1.5 bg-emerald-500 rounded-full"
-                        animate={{
-                          scale: [1, 1.2, 1],
-                          opacity: [0.7, 1, 0.7]
-                        }}
-                        transition={{
-                          duration: 0.8,
-                          repeat: Infinity,
-                          delay: index * 0.2
-                        }}
-                      />
-                    ))}
-                  </div>
+        <div className="w-full bg-white/90 backdrop-blur-xl rounded-lg border border-white/60 p-4 shadow-2xl">
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {/* Background glow */}
+            <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-xl blur-xl" />
+            <div className="relative">
+              {/* Header */}
+              <div className="text-center mb-4">
+                <motion.div className="flex items-center justify-center space-x-1.5 mb-2">
+                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                  <span className="text-xs font-semibold text-emerald-700">Try Now</span>
                 </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Output Cards with 3D Flip Animation - reduced height */}
-            <AnimatePresence>
-              {currentScenario && !isLoading && (
-                <motion.div
-                  className="relative h-64 perspective-1000"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.5 }}
-                  style={{ perspective: '1000px' }}
-                >
-                  {/* System Output Card (Front) */}
-                  <motion.div
-                    className={`absolute inset-0 bg-gradient-to-br from-slate-50/80 to-white/80 rounded-lg p-5 border border-slate-200/50 backface-hidden ${isFlipped ? 'pointer-events-none' : ''}`}
-                    style={{
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden'
-                    }}
-                    animate={{
-                      rotateY: isFlipped ? 180 : 0
-                    }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-base font-semibold text-slate-700">System Output</h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                          JSON
-                        </span>
-                        <div
-                          onClick={() => setIsFlipped(!isFlipped)}
-                          className="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-full font-medium cursor-pointer hover:bg-emerald-600 transition-all duration-200"
-                        >
-                          View FHIR →
-                        </div>
-                      </div>
-                    </div>
-                    <div className="relative h-48 overflow-hidden">
-                      <motion.pre 
-                        className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed h-full overflow-y-auto"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        {currentScenario ? JSON.stringify(currentScenario.systemOutput, null, 2) : ''}
-                      </motion.pre>
-                    </div>
-                  </motion.div>
-
-                  {/* FHIR Output Card (Back) */}
-                  <motion.div
-                    className={`absolute inset-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 rounded-lg p-5 border border-emerald-200/50 backface-hidden ${!isFlipped ? 'pointer-events-none' : ''}`}
-                    style={{
-                      backfaceVisibility: 'hidden',
-                      WebkitBackfaceVisibility: 'hidden',
-                      transform: 'rotateY(180deg)'
-                    }}
-                    animate={{
-                      rotateY: isFlipped ? 0 : -180
-                    }}
-                    transition={{ duration: 0.6, ease: "easeInOut" }}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-base font-semibold text-emerald-700">FHIR Output</h3>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                          FHIR
-                        </span>
-                        <div
-                          onClick={() => setIsFlipped(!isFlipped)}
-                          className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-full font-medium cursor-pointer hover:bg-blue-600 transition-all duration-200"
-                        >
-                          View JSON →
-                        </div>
-                      </div>
-                    </div>
-                    <div className="relative h-48 overflow-hidden">
-                      <motion.pre 
-                        className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed h-full overflow-y-auto"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        {currentScenario?.fhirOutput ? JSON.stringify(currentScenario.fhirOutput, null, 2) : ''}
-                      </motion.pre>
-                    </div>
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                
+                <h2 className="text-xl font-bold text-slate-800 mb-1">
+                  AYUSH Code Lookup
+                </h2>
+                <p className="text-xs text-slate-600">
+                  Multi-system terminology mapping
+                </p>
               </div>
-            </motion.div>
-          </div>
-        </Paper>
+
+              {/* Search Interface */}
+              <div className="flex gap-2 mb-6">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Try: AAA or SL20 (mock data available)"
+                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-md bg-white/80 backdrop-blur-sm font-mono min-h-[36px]"
+                  />
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                </div>
+                <button
+                  onClick={handleSubmit}
+                  disabled={isLoading || !inputValue.trim()}
+                  className="px-4 py-2 bg-emerald-500 text-white text-xs rounded-md hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+                </button>
+              </div>
+
+              {/* Loading Animation */}
+              <AnimatePresence>
+                {isLoading && (
+                  <motion.div
+                    className="flex flex-col items-center justify-center py-6 space-y-1"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
+                    <p className="text-xs text-slate-600">Searching terminology database...</p>
+                    <div className="flex space-x-1">
+                      {[0, 1, 2].map((index) => (
+                        <motion.div
+                          key={index}
+                          className="w-1.5 h-1.5 bg-emerald-500 rounded-full"
+                          animate={{
+                            scale: [1, 1.2, 1],
+                            opacity: [0.7, 1, 0.7]
+                          }}
+                          transition={{
+                            duration: 0.8,
+                            repeat: Infinity,
+                            delay: index * 0.2
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Error Display */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    className="flex items-center justify-center py-4 px-4 bg-red-50 border border-red-200 rounded-lg mb-4"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                  >
+                    <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
+                    <span className="text-xs text-red-700">{error}</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Results Cards with 3D Flip Animation */}
+              <AnimatePresence>
+                {systemOutput && fhirOutput && !isLoading && (
+                  <motion.div
+                    className="relative h-64 perspective-1000"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.5 }}
+                    style={{ perspective: '1000px' }}
+                  >
+                    {/* System Output Card (Front) */}
+                    <motion.div
+                      className={`absolute inset-0 bg-gradient-to-br from-slate-50/80 to-white/80 rounded-lg p-5 border border-slate-200/50 backface-hidden ${isFlipped ? 'pointer-events-none' : ''}`}
+                      style={{
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden'
+                      }}
+                      animate={{
+                        rotateY: isFlipped ? 180 : 0
+                      }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-base font-semibold text-slate-700">Search Results</h3>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                            {systemOutput?.total_matches || 0} matches
+                          </span>
+                          <div
+                            onClick={() => setIsFlipped(!isFlipped)}
+                            className="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-full font-medium cursor-pointer hover:bg-emerald-600 transition-all duration-200"
+                          >
+                            View FHIR →
+                          </div>
+                        </div>
+                      </div>
+                      <div className="relative h-48 overflow-hidden">
+                        <motion.div 
+                          className="h-full overflow-y-auto space-y-3"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          {systemOutput?.matches.map((systemMatch, idx) => (
+                            <motion.div
+                              key={idx}
+                              className="bg-white/60 rounded-lg p-3 border border-slate-200/30"
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.3, delay: idx * 0.1 }}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-semibold text-slate-800 capitalize">
+                                    {systemMatch.system_name}
+                                  </span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                    systemMatch.system_type === 'ayurveda' ? 'bg-orange-100 text-orange-700' :
+                                    systemMatch.system_type === 'siddha' ? 'bg-purple-100 text-purple-700' :
+                                    systemMatch.system_type === 'unani' ? 'bg-green-100 text-green-700' :
+                                    'bg-gray-100 text-gray-700'
+                                  }`}>
+                                    {systemMatch.system_type}
+                                  </span>
+                                </div>
+                                <span className="text-xs text-slate-500">
+                                  {systemMatch.codes.length} code{systemMatch.codes.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                {systemMatch.codes.map((code, codeIdx) => (
+                                  <div key={codeIdx} className="bg-slate-50/50 rounded p-2 border-l-2 border-emerald-300">
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center space-x-2 mb-1">
+                                          <span className="text-sm font-mono font-bold text-slate-800">
+                                            {code.namaste_code}
+                                          </span>
+                                          <div className="flex items-center space-x-1">
+                                            <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                                            <span className="text-xs font-medium text-emerald-700">
+                                              {Math.round(code.confidence_score * 100)}%
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <p className="text-xs text-slate-700 font-medium mb-1">
+                                          {code.display_name}
+                                        </p>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                          {code.description}
+                                        </p>
+                                        {code.tm2_mapping && (
+                                          <div className="mt-2 p-2 bg-blue-50/50 rounded border border-blue-100">
+                                            <div className="flex items-center space-x-2 mb-1">
+                                              <span className="text-xs font-semibold text-blue-700">TM2:</span>
+                                              <span className="text-xs font-mono text-blue-800">{code.tm2_mapping.code}</span>
+                                              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                                                {code.tm2_mapping.category}
+                                              </span>
+                                            </div>
+                                            <p className="text-xs text-blue-700">
+                                              {code.tm2_mapping.display}
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </motion.div>
+                          ))}
+                          
+                          {systemOutput?.cross_system_analysis && (
+                            <motion.div
+                              className="bg-emerald-50/60 rounded-lg p-3 border border-emerald-200/50 mt-3"
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: 0.4 }}
+                            >
+                              <h4 className="text-xs font-semibold text-emerald-800 mb-2">Analysis Summary</h4>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="text-emerald-700 font-medium">Best Match:</span>
+                                  <span className="ml-1 text-emerald-800">
+                                    {Math.round(systemOutput.cross_system_analysis.highest_confidence * 100)}%
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-emerald-700 font-medium">Systems:</span>
+                                  <span className="ml-1 text-emerald-800">
+                                    {systemOutput.systems_found.length}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-emerald-700 font-medium">TM2 Links:</span>
+                                  <span className="ml-1 text-emerald-800">
+                                    {systemOutput.cross_system_analysis.systems_with_mappings}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-emerald-700 font-medium">Categories:</span>
+                                  <span className="ml-1 text-emerald-800">
+                                    {systemOutput.cross_system_analysis.primary_categories.slice(0, 2).join(', ')}
+                                  </span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      </div>
+                    </motion.div>
+
+                    {/* FHIR Output Card (Back) */}
+                    <motion.div
+                      className={`absolute inset-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 rounded-lg p-5 border border-emerald-200/50 backface-hidden ${!isFlipped ? 'pointer-events-none' : ''}`}
+                      style={{
+                        backfaceVisibility: 'hidden',
+                        WebkitBackfaceVisibility: 'hidden',
+                        transform: 'rotateY(180deg)'
+                      }}
+                      animate={{
+                        rotateY: isFlipped ? 0 : -180
+                      }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-base font-semibold text-emerald-700">FHIR Output</h3>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
+                            FHIR
+                          </span>
+                          <div
+                            onClick={() => setIsFlipped(!isFlipped)}
+                            className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-full font-medium cursor-pointer hover:bg-blue-600 transition-all duration-200"
+                          >
+                            Result →
+                          </div>
+                        </div>
+                      </div>
+                      <div className="relative h-48 overflow-hidden">
+                        <motion.pre 
+                          className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed h-full overflow-y-auto"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          {JSON.stringify(fhirOutput, null, 2)}
+                        </motion.pre>
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </div>
   );
