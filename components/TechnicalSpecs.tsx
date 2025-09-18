@@ -177,7 +177,7 @@ export default function TechnicalSpecs() {
           </div>
 
           {/* Code Examples */}
-          <motion.div
+          {/* <motion.div
             className="bg-white rounded-2xl shadow-xl border border-[var(--border-light)] overflow-hidden"
             initial={{ opacity: 0, y: 50 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
@@ -240,7 +240,7 @@ export default function TechnicalSpecs() {
                 </SyntaxHighlighter>
               </motion.div>
             </div>
-          </motion.div>
+          </motion.div> */}
 
           {/* API Endpoints */}
           {/* <motion.div

@@ -102,7 +102,9 @@ export default function LiveDemoAutoplay() {
             definition: match.tm2Mapping.definition,
             category: match.tm2Mapping.display.includes('Heart') ? 'Cardiovascular' :
                      match.tm2Mapping.display.includes('Head') ? 'Neurological' :
-                     match.tm2Mapping.display.includes('bone') ? 'Musculoskeletal' : 'Other',
+                     match.tm2Mapping.display.includes('bone') ? 'Musculoskeletal' : 
+                     match.tm2Mapping.display.includes('Joint') ? 'Musculoskeletal' :
+                     match.tm2Mapping.display.includes('Digestive') ? 'Gastrointestinal' : 'Other',
             icd_link: match.tm2Mapping.link
           } : null
         }))
@@ -219,11 +221,11 @@ export default function LiveDemoAutoplay() {
   const fhirOutput = matches.length > 0 ? generateFhirOutput(matches) : null;
 
   return (
-    <div className="py-8 bg-gradient-to-br from-slate-50/50 to-white">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6">
-        <div className="w-full bg-white/90 backdrop-blur-xl rounded-lg border border-white/60 p-4 shadow-2xl">
+    <div className="py-8 bg-gradient-to-br from-slate-50/50 to-white min-h-screen">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="w-full bg-white/90 backdrop-blur-xl rounded-lg border border-white/60 shadow-2xl">
           <motion.div
-            className="relative"
+            className="relative p-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
@@ -232,39 +234,39 @@ export default function LiveDemoAutoplay() {
             <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-xl blur-xl" />
             <div className="relative">
               {/* Header */}
-              <div className="text-center mb-4">
+              <div className="text-center mb-6">
                 <motion.div className="flex items-center justify-center space-x-1.5 mb-2">
                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                   <span className="text-xs font-semibold text-emerald-700">Try Now</span>
                 </motion.div>
                 
-                <h2 className="text-xl font-bold text-slate-800 mb-1">
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">
                   AYUSH Code Lookup
                 </h2>
-                <p className="text-xs text-slate-600">
-                  Multi-system terminology mapping
+                <p className="text-sm text-slate-600">
+                  Multi-system terminology mapping for traditional medicine
                 </p>
               </div>
 
               {/* Search Interface */}
-              <div className="flex gap-2 mb-6">
+              <div className="flex gap-3 mb-8">
                 <div className="flex-1 relative">
                   <input
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Try: EJC or SN4T (mock data available)"
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-md bg-white/80 backdrop-blur-sm font-mono min-h-[36px]"
+                    placeholder="Try: EJC , SN4T, etc"
+                    className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                   />
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 </div>
                 <button
                   onClick={handleSubmit}
                   disabled={isLoading || !inputValue.trim()}
-                  className="px-4 py-2 bg-emerald-500 text-white text-xs rounded-md hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  className="px-6 py-3 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 min-w-[100px]"
                 >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Search'}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Search'}
                 </button>
               </div>
 
@@ -272,19 +274,19 @@ export default function LiveDemoAutoplay() {
               <AnimatePresence>
                 {isLoading && (
                   <motion.div
-                    className="flex flex-col items-center justify-center py-6 space-y-1"
+                    className="flex flex-col items-center justify-center py-12 space-y-3"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />
-                    <p className="text-xs text-slate-600">Searching terminology database...</p>
+                    <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                    <p className="text-sm text-slate-600">Searching terminology database...</p>
                     <div className="flex space-x-1">
                       {[0, 1, 2].map((index) => (
                         <motion.div
                           key={index}
-                          className="w-1.5 h-1.5 bg-emerald-500 rounded-full"
+                          className="w-2 h-2 bg-emerald-500 rounded-full"
                           animate={{
                             scale: [1, 1.2, 1],
                             opacity: [0.7, 1, 0.7]
@@ -305,13 +307,13 @@ export default function LiveDemoAutoplay() {
               <AnimatePresence>
                 {error && (
                   <motion.div
-                    className="flex items-center justify-center py-4 px-4 bg-red-50 border border-red-200 rounded-lg mb-4"
+                    className="flex items-center justify-center py-6 px-6 bg-red-50 border border-red-200 rounded-lg mb-6"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                   >
-                    <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
-                    <span className="text-xs text-red-700">{error}</span>
+                    <AlertCircle className="w-5 h-5 text-red-500 mr-3" />
+                    <span className="text-sm text-red-700">{error}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -320,7 +322,7 @@ export default function LiveDemoAutoplay() {
               <AnimatePresence>
                 {systemOutput && fhirOutput && !isLoading && (
                   <motion.div
-                    className="relative h-64 perspective-1000"
+                    className="relative min-h-[600px]"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
@@ -329,7 +331,7 @@ export default function LiveDemoAutoplay() {
                   >
                     {/* System Output Card (Front) */}
                     <motion.div
-                      className={`absolute inset-0 bg-gradient-to-br from-slate-50/80 to-white/80 rounded-lg p-5 border border-slate-200/50 backface-hidden ${isFlipped ? 'pointer-events-none' : ''}`}
+                      className={`absolute inset-0 bg-gradient-to-br from-slate-50/80 to-white/80 rounded-lg border border-slate-200/50 backface-hidden ${isFlipped ? 'pointer-events-none' : ''}`}
                       style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden'
@@ -339,141 +341,145 @@ export default function LiveDemoAutoplay() {
                       }}
                       transition={{ duration: 0.6, ease: "easeInOut" }}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-base font-semibold text-slate-700">Search Results</h3>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-                            {systemOutput?.total_matches || 0} matches
-                          </span>
-                          <div
-                            onClick={() => setIsFlipped(!isFlipped)}
-                            className="text-xs bg-emerald-500 text-white px-3 py-1.5 rounded-full font-medium cursor-pointer hover:bg-emerald-600 transition-all duration-200"
-                          >
-                            View FHIR →
+                      <div className="p-6 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-slate-700">Search Results</h3>
+                          <div className="flex items-center space-x-3">
+                            <span className="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                              {systemOutput?.total_matches || 0} matches
+                            </span>
+                            <button
+                              onClick={() => setIsFlipped(!isFlipped)}
+                              className="text-sm bg-emerald-500 text-white px-4 py-2 rounded-full font-medium hover:bg-emerald-600 transition-all duration-200 flex items-center space-x-1"
+                            >
+                              <span>View FHIR</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                      </div>
-                      <div className="relative h-48 overflow-hidden">
-                        <motion.div 
-                          className="h-full overflow-y-auto space-y-3"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          {systemOutput?.matches.map((systemMatch, idx) => (
-                            <motion.div
-                              key={idx}
-                              className="bg-white/60 rounded-lg p-3 border border-slate-200/30"
-                              initial={{ opacity: 0, x: -20 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.3, delay: idx * 0.1 }}
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm font-semibold text-slate-800 capitalize">
-                                    {systemMatch.system_name}
-                                  </span>
-                                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                    systemMatch.system_type === 'ayurveda' ? 'bg-orange-100 text-orange-700' :
-                                    systemMatch.system_type === 'siddha' ? 'bg-purple-100 text-purple-700' :
-                                    systemMatch.system_type === 'unani' ? 'bg-green-100 text-green-700' :
-                                    'bg-gray-100 text-gray-700'
-                                  }`}>
-                                    {systemMatch.system_type}
+                        
+                        <div className="flex-1 overflow-hidden">
+                          <motion.div 
+                            className="h-full overflow-y-auto space-y-4 pr-2"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            {systemOutput?.matches.map((systemMatch, idx) => (
+                              <motion.div
+                                key={idx}
+                                className="bg-white/80 rounded-lg p-4 border border-slate-200/50 shadow-sm"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.3, delay: idx * 0.1 }}
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-3">
+                                    <span className="text-base font-semibold text-slate-800 capitalize">
+                                      {systemMatch.system_name}
+                                    </span>
+                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                      systemMatch.system_type === 'ayurveda' ? 'bg-orange-100 text-orange-700' :
+                                      systemMatch.system_type === 'siddha' ? 'bg-purple-100 text-purple-700' :
+                                      systemMatch.system_type === 'unani' ? 'bg-green-100 text-green-700' :
+                                      'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {systemMatch.system_type}
+                                    </span>
+                                  </div>
+                                  <span className="text-sm text-slate-500">
+                                    {systemMatch.codes.length} code{systemMatch.codes.length !== 1 ? 's' : ''}
                                   </span>
                                 </div>
-                                <span className="text-xs text-slate-500">
-                                  {systemMatch.codes.length} code{systemMatch.codes.length !== 1 ? 's' : ''}
-                                </span>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                {systemMatch.codes.map((code, codeIdx) => (
-                                  <div key={codeIdx} className="bg-slate-50/50 rounded p-2 border-l-2 border-emerald-300">
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center space-x-2 mb-1">
-                                          <span className="text-sm font-mono font-bold text-slate-800">
-                                            {code.Ayurveda_code}
-                                          </span>
-                                          <div className="flex items-center space-x-1">
-                                            <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                                            <span className="text-xs font-medium text-emerald-700">
-                                              {Math.round(code.confidence_score * 100)}%
+                                
+                                <div className="space-y-3">
+                                  {systemMatch.codes.map((code, codeIdx) => (
+                                    <div key={codeIdx} className="bg-slate-50/80 rounded-lg p-3 border-l-4 border-emerald-400">
+                                      <div className="flex items-start justify-between">
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center space-x-3 mb-2">
+                                            <span className="text-base font-mono font-bold text-slate-800">
+                                              {code.Ayurveda_code}
                                             </span>
-                                          </div>
-                                        </div>
-                                        <p className="text-xs text-slate-700 font-medium mb-1">
-                                          {code.display_name}
-                                        </p>
-                                        <p className="text-xs text-slate-600 leading-relaxed">
-                                          {code.description}
-                                        </p>
-                                        {code.tm2_mapping && (
-                                          <div className="mt-2 p-2 bg-blue-50/50 rounded border border-blue-100">
-                                            <div className="flex items-center space-x-2 mb-1">
-                                              <span className="text-xs font-semibold text-blue-700">TM2:</span>
-                                              <span className="text-xs font-mono text-blue-800">{code.tm2_mapping.code}</span>
-                                              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
-                                                {code.tm2_mapping.category}
+                                            <div className="flex items-center space-x-1">
+                                              <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                                              <span className="text-sm font-medium text-emerald-700">
+                                                {Math.round(code.confidence_score * 100)}%
                                               </span>
                                             </div>
-                                            <p className="text-xs text-blue-700">
-                                              {code.tm2_mapping.display}
-                                            </p>
                                           </div>
-                                        )}
+                                          <p className="text-sm text-slate-700 font-medium mb-2">
+                                            {code.display_name}
+                                          </p>
+                                          <p className="text-sm text-slate-600 leading-relaxed mb-3">
+                                            {code.description}
+                                          </p>
+                                          {code.tm2_mapping && (
+                                            <div className="p-3 bg-blue-50/80 rounded-lg border border-blue-100">
+                                              <div className="flex items-center space-x-3 mb-2">
+                                                <span className="text-sm font-semibold text-blue-700">TM2:</span>
+                                                <span className="text-sm font-mono text-blue-800">{code.tm2_mapping.code}</span>
+                                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                                                  {code.tm2_mapping.category}
+                                                </span>
+                                              </div>
+                                              <p className="text-sm text-blue-700">
+                                                {code.tm2_mapping.display}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     </div>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            ))}
+                            
+                            {systemOutput?.cross_system_analysis && (
+                              <motion.div
+                                className="bg-emerald-50/90 rounded-xl p-5 border-2 border-emerald-200/60 shadow-sm"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: 0.4 }}
+                              >
+                                <h4 className="text-base font-semibold text-emerald-800 mb-4">Analysis Summary</h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-emerald-700 font-medium">Best Match:</span>
+                                    <span className="ml-2 text-emerald-800 font-semibold">
+                                      {Math.round(systemOutput.cross_system_analysis.highest_confidence * 100)}%
+                                    </span>
                                   </div>
-                                ))}
-                              </div>
-                            </motion.div>
-                          ))}
-                          
-                          {systemOutput?.cross_system_analysis && (
-                            <motion.div
-                              className="bg-emerald-50/60 rounded-lg p-3 border border-emerald-200/50 mt-3"
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.3, delay: 0.4 }}
-                            >
-                              <h4 className="text-xs font-semibold text-emerald-800 mb-2">Analysis Summary</h4>
-                              <div className="grid grid-cols-2 gap-2 text-xs">
-                                <div>
-                                  <span className="text-emerald-700 font-medium">Best Match:</span>
-                                  <span className="ml-1 text-emerald-800">
-                                    {Math.round(systemOutput.cross_system_analysis.highest_confidence * 100)}%
-                                  </span>
+                                  <div>
+                                    <span className="text-emerald-700 font-medium">Systems:</span>
+                                    <span className="ml-2 text-emerald-800">
+                                      {systemOutput.systems_found.length}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-emerald-700 font-medium">TM2 Links:</span>
+                                    <span className="ml-2 text-emerald-800">
+                                      {systemOutput.cross_system_analysis.systems_with_mappings}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-emerald-700 font-medium">Categories:</span>
+                                    <span className="ml-2 text-emerald-800">
+                                      {systemOutput.cross_system_analysis.primary_categories.slice(0, 2).join(', ')}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div>
-                                  <span className="text-emerald-700 font-medium">Systems:</span>
-                                  <span className="ml-1 text-emerald-800">
-                                    {systemOutput.systems_found.length}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-emerald-700 font-medium">TM2 Links:</span>
-                                  <span className="ml-1 text-emerald-800">
-                                    {systemOutput.cross_system_analysis.systems_with_mappings}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-emerald-700 font-medium">Categories:</span>
-                                  <span className="ml-1 text-emerald-800">
-                                    {systemOutput.cross_system_analysis.primary_categories.slice(0, 2).join(', ')}
-                                  </span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </motion.div>
+                              </motion.div>
+                            )}
+                          </motion.div>
+                        </div>
                       </div>
                     </motion.div>
 
                     {/* FHIR Output Card (Back) */}
                     <motion.div
-                      className={`absolute inset-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 rounded-lg p-5 border border-emerald-200/50 backface-hidden ${!isFlipped ? 'pointer-events-none' : ''}`}
+                      className={`absolute inset-0 bg-gradient-to-br from-emerald-50/80 to-teal-50/80 rounded-lg border border-emerald-200/50 backface-hidden ${!isFlipped ? 'pointer-events-none' : ''}`}
                       style={{
                         backfaceVisibility: 'hidden',
                         WebkitBackfaceVisibility: 'hidden',
@@ -484,29 +490,33 @@ export default function LiveDemoAutoplay() {
                       }}
                       transition={{ duration: 0.6, ease: "easeInOut" }}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-base font-semibold text-emerald-700">FHIR Output</h3>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-medium">
-                            FHIR
-                          </span>
-                          <div
-                            onClick={() => setIsFlipped(!isFlipped)}
-                            className="text-xs bg-blue-500 text-white px-3 py-1.5 rounded-full font-medium cursor-pointer hover:bg-blue-600 transition-all duration-200"
-                          >
-                            Result →
+                      <div className="p-6 h-full flex flex-col">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-semibold text-emerald-700">FHIR Output</h3>
+                          <div className="flex items-center space-x-3">
+                            <span className="text-sm bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-medium">
+                              FHIR R4
+                            </span>
+                            <button
+                              onClick={() => setIsFlipped(!isFlipped)}
+                              className="text-sm bg-blue-500 text-white px-4 py-2 rounded-full font-medium hover:bg-blue-600 transition-all duration-200 flex items-center space-x-1"
+                            >
+                              <span>Back to Results</span>
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                      </div>
-                      <div className="relative h-48 overflow-hidden">
-                        <motion.pre 
-                          className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed h-full overflow-y-auto"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          {JSON.stringify(fhirOutput, null, 2)}
-                        </motion.pre>
+                        
+                        <div className="flex-1 overflow-hidden">
+                          <motion.pre 
+                            className="text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed h-full overflow-y-auto"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                          >
+                            {JSON.stringify(fhirOutput, null, 2)}
+                          </motion.pre>
+                        </div>
                       </div>
                     </motion.div>
                   </motion.div>
