@@ -2,6 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import ClientWrapper from '@/components/ClientWrapper';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
@@ -27,6 +28,7 @@ export default function RootLayout({
           {children}
         </ClientWrapper>
       </body>
+      <SpeedInsights />
     </html>
   );
 }
