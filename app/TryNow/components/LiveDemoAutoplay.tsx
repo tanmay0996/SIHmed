@@ -76,7 +76,90 @@ export default function LiveDemoAutoplay() {
     const tm2Map = new Map<string, TM2Group>();
     
     response.parameter.forEach(param => {
-      if (param.name === 'match' && param.part) {
+      // Handle new symptom-based search format with diseaseGroup
+      if (param.name === 'diseaseGroup' && param.part) {
+        let tm2Code = '';
+        let tm2Display = '';
+        let tm2Definition = '';
+        let tm2Link = '';
+        let symptomSimilarityScore = 0;
+        const traditionalMappings: any[] = [];
+        
+        // Extract TM2 disease info and traditional medicine mappings
+        param.part.forEach(part => {
+          if (part.name === 'tm2Disease' && part.part) {
+            tm2Code = part.part.find(p => p.name === 'code')?.valueCode || '';
+            tm2Display = part.part.find(p => p.name === 'display')?.valueString || '';
+            tm2Definition = part.part.find(p => p.name === 'definition')?.valueString || '';
+            tm2Link = part.part.find(p => p.name === 'system')?.valueUri || '';
+          } else if (part.name === 'symptomSimilarityScore') {
+            symptomSimilarityScore = part.valueDecimal || 0;
+          } else if (part.name === 'traditionalMedicineMapping' && part.part) {
+            traditionalMappings.push(part);
+          }
+        });
+        
+        if (tm2Code) {
+          const groupId = tm2Code;
+          
+          if (!tm2Map.has(groupId)) {
+            tm2Map.set(groupId, {
+              id: groupId,
+              tm2Code,
+              tm2Display,
+              tm2Definition,
+              tm2Link,
+              averageConfidence: 0
+            });
+          }
+          
+          const group = tm2Map.get(groupId)!;
+          
+          // Process traditional medicine mappings
+          traditionalMappings.forEach(mapping => {
+            let code = '';
+            let display = '';
+            let description = '';
+            let confidenceScore = 0;
+            let systemType = '';
+            
+            mapping.part?.forEach((mappingPart: any) => {
+              if (mappingPart.name === 'code' && mappingPart.part) {
+                code = mappingPart.part.find((p: any) => p.name === 'code')?.valueCode || '';
+                display = mappingPart.part.find((p: any) => p.name === 'display')?.valueString || '';
+              } else if (mappingPart.name === 'type') {
+                systemType = mappingPart.valueString || '';
+              } else if (mappingPart.name === 'description') {
+                description = mappingPart.valueString || '';
+              } else if (mappingPart.name === 'mappingConfidenceScore') {
+                confidenceScore = mappingPart.valueDecimal || 0;
+              }
+            });
+            
+            if (code && systemType) {
+              const systemMatch: SystemMatch = {
+                code,
+                display,
+                description,
+                confidenceScore,
+                system: systemType
+              };
+              
+              // Assign to appropriate system (normalize system names)
+              const normalizedSystem = systemType.toLowerCase();
+              if (normalizedSystem === 'namaste' || normalizedSystem === 'ayurveda') {
+                group.ayurvedaMatch = systemMatch;
+              } else if (normalizedSystem === 'siddha') {
+                group.siddhaMatch = systemMatch;
+              } else if (normalizedSystem === 'unani') {
+                group.unaniMatch = systemMatch;
+              }
+            }
+          });
+        }
+      }
+      // Handle legacy code-based search format with match
+      else if (param.name === 'match' && param.part) {
         let code = '';
         let display = '';
         let description = '';
@@ -235,7 +318,7 @@ export default function LiveDemoAutoplay() {
       
       if (searchMode === 'code') {
         // Code search endpoint using path parameter
-        const apiUrl = `https://hello2-wa3yb.ondigitalocean.app/api/fhir/search/code/${encodeURIComponent(inputValue.trim())}`;
+        const apiUrl = `https://namaste-abha-nnza2.ondigitalocean.app/api/fhir/search/code/${encodeURIComponent(inputValue.trim())}`;
         response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
@@ -244,7 +327,7 @@ export default function LiveDemoAutoplay() {
         });
       } else {
         const symptomsQuery = symptomTags.join(', ');
-        const apiUrl = `https://hello2-wa3yb.ondigitalocean.app/api/fhir/search/symptoms?query=${encodeURIComponent(symptomsQuery)}`;
+        const apiUrl = `https://namaste-abha-nnza2.ondigitalocean.app/api/fhir/search/symptoms?query=${encodeURIComponent(symptomsQuery)}`;
         response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
@@ -264,37 +347,57 @@ export default function LiveDemoAutoplay() {
         throw new Error('Invalid response format from API');
       }
       
-      // Check if the API returned an error (too many results)
+      // Check if the API returned an error or no results
       const resultParam = data.parameter?.find(p => p.name === 'result');
       const errorParam = data.parameter?.find(p => p.name === 'error');
       const messageParam = data.parameter?.find(p => p.name === 'message');
+      
+      // For symptom-based searches (new format)
+      const totalDiseaseGroupsParam = data.parameter?.find(p => p.name === 'totalDiseaseGroups');
+      const diseaseGroupParams = data.parameter?.filter(p => p.name === 'diseaseGroup') || [];
+      
+      // For code-based searches (legacy format)
       const resultCountParam = data.parameter?.find(p => p.name === 'resultCount');
       const totalMatchesParam = data.parameter?.find(p => p.name === 'totalMatches');
+      const matchParams = data.parameter?.filter(p => p.name === 'match') || [];
       
-      // Handle "too many results" error
-      if (resultParam?.valueBoolean === false && errorParam?.valueString === 'Too many results') {
-        const count = resultCountParam?.valueInteger || 0;
-        const message = messageParam?.valueString || `Too many results found (${count}). Please add more specific symptoms to narrow down your search.`;
+      // Handle API errors
+      if (resultParam?.valueBoolean === false) {
+        // Handle "too many results" error for symptom searches
+        if (errorParam?.valueString === 'Too many results') {
+          const count = resultCountParam?.valueInteger || 0;
+          const message = messageParam?.valueString || `Too many results found (${count}). Please add more specific symptoms to narrow down your search.`;
+          throw new Error(message);
+        }
+        // Handle other errors
+        const message = messageParam?.valueString || errorParam?.valueString || 'Search failed. Please try again.';
         throw new Error(message);
       }
-      
-      // Check for no matches in multiple ways
-      const totalMatches = totalMatchesParam?.valueInteger;
-      const matchParams = data.parameter?.filter(p => p.name === 'match') || [];
       
       // Parse groups to double-check if we have valid matches
       const groups = parseApiResponseToGroups(data);
       
+      // Check for no matches based on search type
+      let hasResults = false;
+      let totalCount = 0;
+      
+      if (searchMode === 'symptoms') {
+        // Use new format parameters for symptom search
+        totalCount = totalDiseaseGroupsParam?.valueInteger || 0;
+        hasResults = diseaseGroupParams.length > 0 && groups.length > 0;
+      } else {
+        // Use legacy format parameters for code search
+        totalCount = totalMatchesParam?.valueInteger || matchParams.length;
+        hasResults = matchParams.length > 0 && groups.length > 0;
+      }
+      
       // Multiple conditions to catch "no matches" scenarios
       if (
         // Explicit no matches from API
-        (resultParam?.valueBoolean === true && totalMatches === 0) ||
-        // No totalMatches parameter at all and no match parameters
-        (totalMatches === undefined && matchParams.length === 0) ||
+        (resultParam?.valueBoolean === true && totalCount === 0) ||
         // No valid groups after parsing
-        groups.length === 0 ||
-        // Total matches is null or undefined and no meaningful data
-        ((totalMatches === null || totalMatches === undefined) && matchParams.length === 0)
+        !hasResults ||
+        groups.length === 0
       ) {
         const searchTerm = searchMode === 'code' ? `code: "${inputValue.trim()}"` : `symptoms: "${symptomTags.join(', ')}"`;
         throw new Error(`No matches found for ${searchTerm}. Please try a different search term or check your spelling.`);
@@ -302,7 +405,7 @@ export default function LiveDemoAutoplay() {
       
       // If we get here, we should have valid results
       setApiResponse(data);
-      setTotalMatches(totalMatches || groups.length);
+      setTotalMatches(totalCount || groups.length);
       setTM2Groups(groups);
       setCurrentView('overview');
       
