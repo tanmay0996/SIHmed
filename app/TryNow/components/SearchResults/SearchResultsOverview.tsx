@@ -79,12 +79,14 @@ export default function SearchResultsOverview({
             </div>
           </div>
           
-          {/* Quick stats */}
+          {/* Quick stats - Hide confidence for code search */}
           <div className="flex items-center space-x-6 text-xs text-slate-500">
-            <div className="flex items-center space-x-1">
-              <Target className="w-3 h-3" />
-              <span>Best match: {Math.round(Math.max(...groups.map(g => g.averageConfidence)) * 100)}%</span>
-            </div>
+            {searchMode === 'symptoms' && (
+              <div className="flex items-center space-x-1">
+                <Target className="w-3 h-3" />
+                <span>Best match: {Math.round(Math.max(...groups.map(g => g.averageConfidence)) * 100)}%</span>
+              </div>
+            )}
             <div>TM2 categories: {groups.length}</div>
             <div>Traditional systems: {groups.reduce((acc, g) => acc + [g.ayurvedaMatch, g.siddhaMatch, g.unaniMatch].filter(Boolean).length, 0)}</div>
           </div>

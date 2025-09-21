@@ -28,6 +28,7 @@ interface ResultCardProps {
   group: TM2Group;
   index: number;
   onClick: (groupId: string) => void;
+  searchMode?: 'code' | 'symptoms'; // Add searchMode prop
 }
 
 const getSystemIcon = (system: string) => {
@@ -58,7 +59,7 @@ const getSystemColor = (system: string) => {
   }
 };
 
-export default function ResultCard({ group, index, onClick }: ResultCardProps) {
+export default function ResultCard({ group, index, onClick, searchMode }: ResultCardProps) {
   const systemMatches = [
     { label: 'Ayurveda', match: group.ayurvedaMatch, system: 'ayurveda' },
     { label: 'Siddha', match: group.siddhaMatch, system: 'siddha' },
@@ -84,12 +85,15 @@ export default function ResultCard({ group, index, onClick }: ResultCardProps) {
               <span className="text-sm font-mono font-bold text-blue-800">
                 {group.tm2Code}
               </span>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
-                <span className="text-xs font-medium text-emerald-700">
-                  {Math.round(group.averageConfidence * 100)}%
-                </span>
-              </div>
+              {/* Hide confidence for code search */}
+              {searchMode === 'symptoms' && (
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                  <span className="text-xs font-medium text-emerald-700">
+                    {Math.round(group.averageConfidence * 100)}%
+                  </span>
+                </div>
+              )}
             </div>
             <h3 className="text-base font-semibold text-slate-800 mb-2 group-hover:text-emerald-700 transition-colors">
               {group.tm2Display}
@@ -131,9 +135,12 @@ export default function ResultCard({ group, index, onClick }: ResultCardProps) {
                     {item.match!.description}
                   </p>
                 </div>
-                <div className="text-xs font-medium ml-2">
-                  {Math.round(item.match!.confidenceScore * 100)}%
-                </div>
+                {/* Hide confidence for code search */}
+                {searchMode === 'symptoms' && (
+                  <div className="text-xs font-medium ml-2">
+                    {Math.round(item.match!.confidenceScore * 100)}%
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}

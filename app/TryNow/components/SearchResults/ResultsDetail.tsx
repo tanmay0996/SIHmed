@@ -160,12 +160,15 @@ export default function ResultsDetail({ group, searchMode, onBack, fhirOutput }:
                 <span className="text-lg font-mono font-bold text-blue-800">
                   {group.tm2Code}
                 </span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
-                  <span className="text-sm font-medium text-emerald-700">
-                    {Math.round(group.averageConfidence * 100)}% match
-                  </span>
-                </div>
+                {/* Hide confidence for code search */}
+                {searchMode === 'symptoms' && (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
+                    <span className="text-sm font-medium text-emerald-700">
+                      {Math.round(group.averageConfidence * 100)}% match
+                    </span>
+                  </div>
+                )}
               </div>
               
               <h2 className="text-xl font-bold text-slate-800 mb-3">
@@ -223,9 +226,12 @@ export default function ResultsDetail({ group, searchMode, onBack, fhirOutput }:
                         <span className={`text-sm font-mono font-bold px-2 py-1 rounded ${colors.badge}`}>
                           {item.match!.code}
                         </span>
-                        <span className="text-sm font-medium text-slate-600">
-                          {Math.round(item.match!.confidenceScore * 100)}% confidence
-                        </span>
+                        {/* Hide confidence for code search */}
+                        {searchMode === 'symptoms' && (
+                          <span className="text-sm font-medium text-slate-600">
+                            {Math.round(item.match!.confidenceScore * 100)}% confidence
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -251,7 +257,7 @@ export default function ResultsDetail({ group, searchMode, onBack, fhirOutput }:
           })}
         </div>
 
-        {/* Summary */}
+        {/* Summary - Hide confidence for code search */}
         <motion.div
           className="bg-emerald-50/90 rounded-xl p-6 border-2 border-emerald-200/60"
           initial={{ opacity: 0, y: 20 }}
@@ -263,25 +269,27 @@ export default function ResultsDetail({ group, searchMode, onBack, fhirOutput }:
           </h4>
           
           <div className="grid grid-cols-2 gap-6 text-sm">
-            <div>
-              <span className="text-emerald-700 font-medium">Average Confidence:</span>
-              <span className="ml-2 text-emerald-800 font-semibold">
-                {Math.round(group.averageConfidence * 100)}%
-              </span>
-            </div>
-            <div>
+            {searchMode === 'symptoms' && (
+              <div>
+                <span className="text-emerald-700 font-medium">Average Confidence:</span>
+                <span className="ml-2 text-emerald-800 font-semibold">
+                  {Math.round(group.averageConfidence * 100)}%
+                </span>
+              </div>
+            )}
+            <div className={searchMode === 'symptoms' ? '' : 'col-span-2'}>
               <span className="text-emerald-700 font-medium">Systems Matched:</span>
               <span className="ml-2 text-emerald-800">
                 {systemMatches.length}
               </span>
             </div>
-            <div>
+            <div className={searchMode === 'symptoms' ? '' : 'col-span-2'}>
               <span className="text-emerald-700 font-medium">TM2 Category:</span>
               <span className="ml-2 text-emerald-800">
                 {group.tm2Code}
               </span>
             </div>
-            <div>
+            <div className={searchMode === 'symptoms' ? '' : 'col-span-2'}>
               <span className="text-emerald-700 font-medium">WHO ICD-11:</span>
               <span className="ml-2 text-emerald-800">
                 {group.tm2Link ? 'Linked' : 'Not available'}
