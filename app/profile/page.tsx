@@ -99,7 +99,7 @@ const mockFetch = async (url: string, options?: RequestInit): Promise<any> => {
 };
 
 // Utility function for Aadhaar validation
-export const isValidAadhaar = (aadhaar: string): boolean => {
+const isValidAadhaar = (aadhaar: string): boolean => {
   const cleaned = aadhaar.replace(/\D/g, '');
   return cleaned.length === 12 && /^\d{12}$/.test(cleaned);
 };
@@ -283,8 +283,8 @@ const AnimatedInput: React.FC<{
 };
 
 // Profile Header Component
-const ProfileHeader: React.FC<{ profile: UserProfile; isLoading: boolean }> = ({ profile, isLoading }) => {
-  if (isLoading) {
+const ProfileHeader: React.FC<{ profile: UserProfile | null; isLoading: boolean }> = ({ profile, isLoading }) => {
+  if (isLoading || !profile) {
     return (
       <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-8 shadow-2xl">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
@@ -396,7 +396,7 @@ const ProfileHeader: React.FC<{ profile: UserProfile; isLoading: boolean }> = ({
 };
 
 // Profile Details Component with Aadhaar Field
-const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: string, value: string) => void }> = ({ 
+const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: keyof UserProfile, value: any) => void }> = ({ 
   profile, 
   onUpdate 
 }) => {
@@ -637,7 +637,7 @@ const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: string,
 };
 
 // API Key Management Component
-const ApiKeyManagement: React.FC<{ profile: UserProfile; onUpdate: (field: string, value: any) => void }> = ({ 
+const ApiKeyManagement: React.FC<{ profile: UserProfile; onUpdate: (field: keyof UserProfile, value: any) => void }> = ({ 
   profile, 
   onUpdate 
 }) => {
@@ -887,7 +887,7 @@ const UsageOverview: React.FC<{ profile: UserProfile }> = ({ profile }) => {
 
   useEffect(() => {
     progress.set(0);
-    const animation = progress.set(totalUsage % 100); // Mock progress for animation
+    progress.set(totalUsage % 100); // Mock progress for animation
   }, [totalUsage]);
 
   return (
@@ -1056,7 +1056,7 @@ const ProfilePage: React.FC = () => {
     loadProfile();
   }, []);
 
-  const handleProfileUpdate = (field: string, value: any) => {
+  const handleProfileUpdate = (field: keyof UserProfile, value: any) => {
     if (profile) {
       setProfile({
         ...profile,

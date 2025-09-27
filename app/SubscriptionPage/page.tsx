@@ -14,7 +14,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, useScroll, useTransform, useInView, useAnimation, AnimatePresence } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView, useAnimation, AnimatePresence, Variants } from 'framer-motion';
 import { 
   Check, 
   X, 
@@ -348,7 +348,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, isYearly, onSelectPlan, index
     }
   }, [inView, controls, currentPrice]);
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { 
       opacity: 0, 
       y: 50,
@@ -751,6 +751,8 @@ const PaymentCTA: React.FC<PaymentCTAProps> = ({
     }
   };
 
+ 
+
   if (!isOpen || !selectedPlan) return null;
 
   return (
@@ -947,7 +949,6 @@ const SubscriptionPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50/30 to-teal-50/20 relative overflow-hidden">
       {/* Background Pattern */}
       <div 
-        className="absolute inset-0 opacity-40"
         style={{
           backgroundImage: `radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.15) 1px, transparent 0)`,
           backgroundSize: '32px 32px'
@@ -1051,19 +1052,4 @@ const SubscriptionPage: React.FC = () => {
   );
 };
 
-// Export components
 export default SubscriptionPage;
-export { 
-  PlanCard, 
-  BillingToggle, 
-  ComparisonTable, 
-  FaqAccordion, 
-  PaymentCTA,
-  FloatingMedicalIcons
-};
-
-// Export types for external use
-export type { Plan, PlanFeature, CheckoutData, CheckoutResponse };
-
-// Export utility functions
-export { formatPrice, calculateDiscountedPrice, mockGetPlans, mockCheckout };
