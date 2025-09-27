@@ -6,17 +6,12 @@ import HowItWorks from '@/components/HowItWorks';
 import TechnicalSpecs from '@/components/TechnicalSpecs';
 import EnterpriseReady from '@/components/EnterpriseReady';
 import Footer from '@/components/Footer';
-import GlobalStethoscope from '@/components/GlobalStethoscope';
-import GlobalSphere from '@/components/GlobalSphere';
-import LiveDemoAutoplay from '@/components/LiveDemoAutoplay';
+
 export default function Home() {
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-white">
+    <main className="min-h-screen bg-white">
       <Header />
-      {/* <GlobalStethoscope /> */}
-      {/* <GlobalSphere /> */}
       <Hero />
-      <LiveDemoAutoplay />
       <HowItWorks />
       <TechnicalSpecs />
       <EnterpriseReady />
