@@ -1,7 +1,6 @@
-// app/TryNow/components/SearchFilter.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Tag, X, Code, Sparkles } from 'lucide-react';
 
@@ -19,6 +18,34 @@ interface SearchFilterProps {
 const EXAMPLE_CODES = ['EJC', 'SN4T', 'O-605', 'SM87', 'Z25'];
 const EXAMPLE_SYMPTOMS = ['fever', 'headache', 'nausea', 'fatigue', 'dizziness', 'joint pain', 'night blindness', 'gait disturbances'];
 
+// Types based on the expected backend response
+interface Suggestion {
+  suggestion: string;
+  reason: string;
+}
+
+interface SimilarResult {
+  total_score_percent: number;
+  tm2_code: string;
+  tm2_title: string;
+  code: string;
+  code_title: string;
+}
+
+interface SearchData {
+  auto_corrected: boolean;
+  original_query?: string;
+  corrected_to?: string;
+  total_results: number;
+  search_time: string;
+  show_suggestions: boolean;
+  suggestions: Suggestion[];
+  show_similar_results: boolean;
+  similar_results_when_no_match: SimilarResult[];
+  results: any[]; // Adjust based on actual results structure
+  query: string;
+}
+
 export default function SearchFilter({
   searchMode,
   setSearchMode,
@@ -30,12 +57,87 @@ export default function SearchFilter({
   isLoading
 }: SearchFilterProps) {
   const [tempSymptom, setTempSymptom] = useState('');
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [similarResults, setSimilarResults] = useState<SimilarResult[]>([]);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState<'success' | 'error' | 'warning' | 'loading' | 'info' | ''>('');
+  const [correctionInfo, setCorrectionInfo] = useState('');
+
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const debounce = (func: Function, delay: number) => {
+    return (...args: any[]) => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  const performSearch = useCallback(async (query: string, mode: 'code' | 'symptoms') => {
+    if (!query.trim()) {
+      clearSmartResults();
+      return;
+    }
+
+    setStatusMessage('Searching...');
+    setStatusType('loading');
+    clearSmartResults(false); // Clear results but keep status
+
+    try {
+      const response = await fetch(`/smart-search?query=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error('Search failed');
+      const data: SearchData = await response.json();
+
+      let message = '';
+      let type: typeof statusType = 'info';
+
+      if (data.auto_corrected) {
+        message = `No results for "${data.original_query}". Showing results for "${data.corrected_to}" in ${data.search_time}`;
+        type = 'warning';
+        setCorrectionInfo(`Search Correction: No results for "${data.original_query}" → Showing results for "${data.corrected_to}"`);
+      } else if (data.total_results > 0) {
+        message = `Found ${data.total_results} results in ${data.search_time}`;
+        type = 'success';
+      } else {
+        message = `No results found for "${data.query}" in ${data.search_time}`;
+        type = 'error';
+      }
+
+      setStatusMessage(message);
+      setStatusType(type);
+
+      if (data.show_suggestions && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions);
+      }
+
+      if (data.show_similar_results && data.similar_results_when_no_match.length > 0) {
+        setSimilarResults(data.similar_results_when_no_match);
+      }
+
+      // If there are main results, you could handle them here (e.g., preview), but for autocomplete, focus on suggestions/similar
+    } catch (error) {
+      setStatusMessage(`Error: ${(error as Error).message}`);
+      setStatusType('error');
+    }
+  }, []);
+
+  const debouncedSearch = useCallback(debounce(performSearch, 300), [performSearch]);
+
+  const clearSmartResults = (clearStatus = true) => {
+    setSuggestions([]);
+    setSimilarResults([]);
+    setCorrectionInfo('');
+    if (clearStatus) {
+      setStatusMessage('');
+      setStatusType('');
+    }
+  };
 
   const handleSymptomAdd = () => {
     const symptom = tempSymptom.trim().toLowerCase();
     if (symptom && !symptomTags.includes(symptom)) {
       setSymptomTags([...symptomTags, symptom]);
       setTempSymptom('');
+      clearSmartResults();
     }
   };
 
@@ -59,11 +161,32 @@ export default function SearchFilter({
   const handleExampleClick = (example: string) => {
     if (searchMode === 'code') {
       setInputValue(example);
+      debouncedSearch(example, 'code');
     } else {
       if (!symptomTags.includes(example.toLowerCase())) {
         setSymptomTags([...symptomTags, example.toLowerCase()]);
       }
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    if (searchMode === 'code') {
+      setInputValue(suggestion);
+      debouncedSearch(suggestion, 'code');
+    } else {
+      setTempSymptom(suggestion);
+      // Optionally auto-add: handleSymptomAdd();
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, mode: 'code' | 'symptoms') => {
+    const value = e.target.value;
+    if (mode === 'code') {
+      setInputValue(value);
+    } else {
+      setTempSymptom(value);
+    }
+    debouncedSearch(value, mode);
   };
 
   const canSearch = searchMode === 'code' 
@@ -118,7 +241,7 @@ export default function SearchFilter({
                 <input
                   type="text"
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => handleInputChange(e, 'code')}
                   onKeyDown={handleCodeKeyDown}
                   placeholder="Enter AYUSH code (e.g., EJC, SN4T, O-605)"
                   className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
@@ -133,6 +256,60 @@ export default function SearchFilter({
                 Search
               </button>
             </div>
+
+            {/* Smart Search Status */}
+            {statusMessage && (
+              <div className={`text-sm p-2 rounded ${statusType === 'success' ? 'bg-green-100 text-green-700' : statusType === 'error' ? 'bg-red-100 text-red-700' : statusType === 'warning' ? 'bg-yellow-100 text-yellow-700' : statusType === 'loading' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                {statusMessage}
+              </div>
+            )}
+
+            {/* Correction Info */}
+            {correctionInfo && (
+              <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800">
+                {correctionInfo}
+              </div>
+            )}
+
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  <span>Did you mean?</span>
+                </h3>
+                <div className="space-y-2">
+                  {suggestions.map((sug, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(sug.suggestion)}
+                      className="block w-full text-left text-sm bg-blue-50 p-2 rounded hover:bg-blue-100 transition-colors"
+                    >
+                      <strong>{sug.suggestion}</strong> - {sug.reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Similar Results */}
+            {similarResults.length > 0 && (
+              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  <span>Similar Results</span>
+                </h3>
+                <div className="space-y-2">
+                  {similarResults.map((result, index) => (
+                    <div key={index} className="text-sm border-b pb-2 last:border-0">
+                      <div><strong>Relevance:</strong> {result.total_score_percent}%</div>
+                      <div><strong>TM2:</strong> {result.tm2_code} - {result.tm2_title}</div>
+                      <div><strong>Code:</strong> {result.code} - {result.code_title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             {/* Example codes */}
             <div className="bg-white/60 rounded-lg p-4 border border-slate-200/50">
@@ -161,7 +338,7 @@ export default function SearchFilter({
                 <input
                   type="text"
                   value={tempSymptom}
-                  onChange={(e) => setTempSymptom(e.target.value)}
+                  onChange={(e) => handleInputChange(e, 'symptoms')}
                   onKeyDown={handleSymptomKeyDown}
                   placeholder="Add symptom (e.g., fever, headache, nausea)..."
                   className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
@@ -176,6 +353,60 @@ export default function SearchFilter({
                 Add
               </button>
             </div>
+
+            {/* Smart Search Status */}
+            {statusMessage && (
+              <div className={`text-sm p-2 rounded ${statusType === 'success' ? 'bg-green-100 text-green-700' : statusType === 'error' ? 'bg-red-100 text-red-700' : statusType === 'warning' ? 'bg-yellow-100 text-yellow-700' : statusType === 'loading' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                {statusMessage}
+              </div>
+            )}
+
+            {/* Correction Info */}
+            {correctionInfo && (
+              <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800">
+                {correctionInfo}
+              </div>
+            )}
+
+            {/* Suggestions */}
+            {suggestions.length > 0 && (
+              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  <span>Did you mean?</span>
+                </h3>
+                <div className="space-y-2">
+                  {suggestions.map((sug, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(sug.suggestion)}
+                      className="block w-full text-left text-sm bg-blue-50 p-2 rounded hover:bg-blue-100 transition-colors"
+                    >
+                      <strong>{sug.suggestion}</strong> - {sug.reason}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Similar Results */}
+            {similarResults.length > 0 && (
+              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
+                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-blue-500" />
+                  <span>Similar Results</span>
+                </h3>
+                <div className="space-y-2">
+                  {similarResults.map((result, index) => (
+                    <div key={index} className="text-sm border-b pb-2 last:border-0">
+                      <div><strong>Relevance:</strong> {result.total_score_percent}%</div>
+                      <div><strong>TM2:</strong> {result.tm2_code} - {result.tm2_title}</div>
+                      <div><strong>Code:</strong> {result.code} - {result.code_title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Example symptoms */}
             <div className="bg-white/60 rounded-lg p-4 border border-slate-200/50">
