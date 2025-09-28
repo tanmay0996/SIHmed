@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 import Link from 'next/link';
 import { HeartbeatLine } from './MedicalIcons';
 
@@ -164,7 +164,7 @@ export default function Header() {
             ))}
           </motion.nav>
 
-          {/* API Status & CTA - Responsive layout */}
+          {/* Right Side Actions - API Status, Profile, CTA - Responsive layout */}
           <motion.div 
             className="hidden sm:flex items-center space-x-2 sm:space-x-3 lg:space-x-4"
             initial={{ opacity: 0, x: 20 }}
@@ -184,6 +184,22 @@ export default function Header() {
               </span>
               <HeartbeatLine className="w-6 h-3 sm:w-8 sm:h-4 text-[var(--primary-green)] hidden sm:block" />
             </div>
+
+            {/* Profile Icon */}
+            <motion.button 
+              className="p-2 sm:p-2.5 rounded-full border border-[var(--border-light)] hover:border-[var(--primary-green)] hover:bg-[var(--primary-green)]/5 transition-all duration-300 group"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.4 }}
+              aria-label="User profile"
+            >
+              <User 
+                size={16}
+                className="text-gray-600 group-hover:text-[var(--primary-green)] transition-colors sm:w-[18px] sm:h-[18px]" 
+              />
+            </motion.button>
             
             <motion.button 
               className="bg-[var(--primary-green)] text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-medium hover:bg-[var(--secondary-green)] transition-all duration-300 medical-pulse text-sm sm:text-base"
@@ -195,18 +211,32 @@ export default function Header() {
             </motion.button>
           </motion.div>
 
-          {/* Mobile Menu Button */}
-          <motion.button
-            className="sm:hidden p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            aria-label="Toggle menu"
-            aria-expanded={isMenuOpen}
-          >
-            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </motion.button>
+          {/* Mobile Actions - Profile Icon + Menu Button */}
+          <div className="flex items-center space-x-2 sm:hidden">
+            <motion.button 
+              className="p-2 rounded-full border border-[var(--border-light)] hover:border-[var(--primary-green)] hover:bg-[var(--primary-green)]/5 transition-all duration-300"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.4 }}
+              aria-label="User profile"
+            >
+              <User size={16} className="text-gray-600" />
+            </motion.button>
+
+            <motion.button
+              className="p-2 -mr-2 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              aria-label="Toggle menu"
+              aria-expanded={isMenuOpen}
+            >
+              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </motion.button>
+          </div>
 
           {/* Tablet Menu Button */}
           <motion.button
@@ -291,6 +321,22 @@ export default function Header() {
                   </motion.a>
                 );
               })}
+
+              {/* Profile Section in Mobile Menu */}
+              <motion.div
+                className="flex items-center space-x-3 py-2 px-1 border-t border-[var(--border-light)] pt-4"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6, duration: 0.3 }}
+              >
+                <div className="w-8 h-8 rounded-full border border-[var(--primary-green)] bg-[var(--primary-green)]/5 flex items-center justify-center">
+                  <User size={18} className="text-[var(--primary-green)]" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-[var(--text-black)]">Profile</p>
+                  <p className="text-xs text-gray-500">Manage your account</p>
+                </div>
+              </motion.div>
               
               {/* Mobile API Status & CTA */}
               <div className="pt-3 sm:pt-4 border-t border-[var(--border-light)]">
