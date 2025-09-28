@@ -318,7 +318,7 @@ export default function LiveDemoAutoplay() {
       
       if (searchMode === 'code') {
         // Code search endpoint using path parameter
-        const apiUrl = `https://aneesh2-me3un.ondigitalocean.app/api/fhir/search/code/${encodeURIComponent(inputValue.trim())}`;
+        const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/code/${encodeURIComponent(inputValue.trim())}`;
         response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
@@ -327,7 +327,7 @@ export default function LiveDemoAutoplay() {
         });
       } else {
         const symptomsQuery = symptomTags.join(', ');
-        const apiUrl = `https://aneesh2-me3un.ondigitalocean.app/api/fhir/search/symptoms?query=${encodeURIComponent(symptomsQuery)}`;
+        const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/symptoms?query=${encodeURIComponent(symptomsQuery)}`;
         response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
