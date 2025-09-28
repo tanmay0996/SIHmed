@@ -1,6 +1,7 @@
 
 "use client";
 import React, { useState } from 'react';
+import LoadingAnimation from '../../components/LoadingAnimation';
 import { useRouter } from 'next/navigation';
 
 export default function AbhaLoginPage() {
@@ -10,11 +11,14 @@ export default function AbhaLoginPage() {
   const [aadhar, setAadhar] = useState("");
   const [abhaId, setAbhaId] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     const validAadhar = "123456789012";
     const validAbha = "ABHA-1234-5678";
+    await new Promise(res => setTimeout(res, 1200)); // Simulate network delay
     if (
       (tab === 'aadhar' && aadhar.trim() === validAadhar) ||
       (tab === 'abha' && abhaId.trim().toUpperCase() === validAbha)
@@ -27,6 +31,7 @@ export default function AbhaLoginPage() {
           : "Please enter a valid ABHA Auth ID."
       );
     }
+    setLoading(false);
   };
 
   return (
@@ -37,8 +42,12 @@ export default function AbhaLoginPage() {
         alignItems: "center",
         justifyContent: "center",
         background: "#f7faf9",
+        position: "relative"
       }}
     >
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10, display: loading ? 'flex' : 'none', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.7)' }}>
+        <LoadingAnimation visible={loading} />
+      </div>
       <div
         style={{
           background: "rgba(255,255,255,0.92)",
