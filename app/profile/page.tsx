@@ -57,16 +57,6 @@ const mockFetch = async (url: string, options?: RequestInit): Promise<any> => {
           status: 'active',
           usage_count: 15420
         },
-        // {
-        //   id: '2',
-        //   name: 'Development API',
-        //   key: 'hk_test_abcdef1234567890',
-        //   masked_key: 'hk_test_••••••••••••7890',
-        //   created_at: '2024-11-15T00:00:00Z',
-        //   last_used: '2025-01-07T16:30:00Z',
-        //   status: 'active',
-        //   usage_count: 8932
-        // }
       ]
     };
   }
@@ -76,6 +66,14 @@ const mockFetch = async (url: string, options?: RequestInit): Promise<any> => {
     return {
       success: true,
       aadhaar_masked: `xxxx-xxxx-${body.aadhaar.slice(-4)}`
+    };
+  }
+
+  if (url === '/api/profile/update' && options?.method === 'POST') {
+    const body = JSON.parse(options.body as string);
+    return {
+      success: true,
+      ...body
     };
   }
 
@@ -94,6 +92,13 @@ const mockFetch = async (url: string, options?: RequestInit): Promise<any> => {
       }
     };
   }
+
+  if (url === '/api/auth/logout' && options?.method === 'POST') {
+    return {
+      success: true,
+      message: 'Logged out successfully'
+    };
+  }
   
   throw new Error('API endpoint not implemented');
 };
@@ -102,6 +107,18 @@ const mockFetch = async (url: string, options?: RequestInit): Promise<any> => {
 const isValidAadhaar = (aadhaar: string): boolean => {
   const cleaned = aadhaar.replace(/\D/g, '');
   return cleaned.length === 12 && /^\d{12}$/.test(cleaned);
+};
+
+// Email validation
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+// Phone validation
+const isValidPhone = (phone: string): boolean => {
+  const phoneRegex = /^\+?[\d\s-()]{10,15}$/;
+  return phoneRegex.test(phone);
 };
 
 // Animated Background Elements
@@ -217,7 +234,8 @@ const AnimatedInput: React.FC<{
   placeholder?: string;
   readOnly?: boolean;
   className?: string;
-}> = ({ label, value, onChange, type = "text", placeholder, readOnly = false, className = "" }) => {
+  error?: string;
+}> = ({ label, value, onChange, type = "text", placeholder, readOnly = false, className = "", error }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -243,7 +261,9 @@ const AnimatedInput: React.FC<{
         <motion.div
           className="absolute inset-0 rounded-xl border-2"
           animate={{
-            borderColor: isFocused 
+            borderColor: error
+              ? "rgb(239, 68, 68)"
+              : isFocused 
               ? "rgb(16, 185, 129)"
               : isHovered
               ? "rgb(20, 184, 166)"
@@ -254,7 +274,7 @@ const AnimatedInput: React.FC<{
 
         {/* Flowing line animation */}
         <AnimatePresence>
-          {isFocused && (
+          {isFocused && !error && (
             <motion.div
               className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-500"
               initial={{ width: 0 }}
@@ -275,15 +295,30 @@ const AnimatedInput: React.FC<{
           onBlur={() => setIsFocused(false)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className={`relative w-full p-4 bg-white/50 rounded-xl focus:outline-none transition-all ${className}`}
+          className={`relative w-full p-4 bg-white/50 rounded-xl focus:outline-none transition-all ${
+            readOnly ? 'cursor-default' : ''
+          } ${className}`}
         />
       </div>
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-sm text-red-600 mt-1"
+        >
+          {error}
+        </motion.div>
+      )}
     </div>
   );
 };
 
-// Profile Header Component
-const ProfileHeader: React.FC<{ profile: UserProfile | null; isLoading: boolean }> = ({ profile, isLoading }) => {
+// Profile Header Component with Logout
+const ProfileHeader: React.FC<{ 
+  profile: UserProfile | null; 
+  isLoading: boolean;
+  onLogout: () => void;
+}> = ({ profile, isLoading, onLogout }) => {
   if (isLoading || !profile) {
     return (
       <div className="bg-white/70 backdrop-blur-xl rounded-2xl p-8 shadow-2xl">
@@ -389,90 +424,181 @@ const ProfileHeader: React.FC<{ profile: UserProfile | null; isLoading: boolean 
           >
             <Bell size={20} />
           </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onLogout}
+            className="p-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors group"
+            title="Logout"
+          >
+            <motion.div
+              animate={{ x: [0, 2, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <LogOut size={20} />
+            </motion.div>
+          </motion.button>
         </div>
       </div>
     </motion.div>
   );
 };
 
-// Profile Details Component with Aadhaar Field
-const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: keyof UserProfile, value: any) => void }> = ({ 
-  profile, 
-  onUpdate 
-}) => {
-  const [isEditingAadhaar, setIsEditingAadhaar] = useState(false);
+// Profile Details Component with Integrated Aadhaar Editing
+const ProfileDetails: React.FC<{ 
+  profile: UserProfile; 
+  onUpdate: (field: keyof UserProfile, value: any) => void;
+  onEditToggle?: () => void;
+}> = ({ profile, onUpdate, onEditToggle }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedProfile, setEditedProfile] = useState({
+    name: profile.name,
+    email: profile.email,
+    phone: profile.phone,
+  });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Aadhaar editing states integrated into main editing flow
   const [aadhaarValue, setAadhaarValue] = useState('');
   const [showAadhaar, setShowAadhaar] = useState(false);
-  const [validationMessage, setValidationMessage] = useState('');
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [aadhaarValidationMessage, setAadhaarValidationMessage] = useState('');
+  const [isConfirmingAadhaar, setIsConfirmingAadhaar] = useState(false);
   const [confirmValue, setConfirmValue] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+  const [aadhaarChanged, setAadhaarChanged] = useState(false);
 
-  const handleAadhaarEdit = () => {
-    setIsEditingAadhaar(true);
+  const validatePersonalInfo = () => {
+    const newErrors: { [key: string]: string } = {};
+    
+    if (!editedProfile.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!editedProfile.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!isValidEmail(editedProfile.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (!editedProfile.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!isValidPhone(editedProfile.phone)) {
+      newErrors.phone = 'Please enter a valid phone number';
+    }
+
+    // Validate Aadhaar if changed
+    if (aadhaarChanged && aadhaarValue && !isValidAadhaar(aadhaarValue)) {
+      newErrors.aadhaar = 'Please enter a valid 12-digit Aadhaar number';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditedProfile({
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+    });
+    setErrors({});
     setAadhaarValue('');
-    setValidationMessage('');
+    setAadhaarChanged(false);
+    setIsConfirmingAadhaar(false);
+    setConfirmValue('');
+    setAadhaarValidationMessage('');
+    onEditToggle?.();
   };
 
   const handleAadhaarValidation = (value: string) => {
     const cleaned = value.replace(/\D/g, '');
     setAadhaarValue(cleaned);
+    setAadhaarChanged(true);
     
     setTimeout(() => {
       if (cleaned.length === 0) {
-        setValidationMessage('');
+        setAadhaarValidationMessage('');
       } else if (cleaned.length !== 12) {
-        setValidationMessage('Aadhaar must be 12 digits');
+        setAadhaarValidationMessage('Aadhaar must be 12 digits');
       } else if (isValidAadhaar(cleaned)) {
-        setValidationMessage('Valid Aadhaar format');
+        setAadhaarValidationMessage('Valid Aadhaar format');
       } else {
-        setValidationMessage('Invalid Aadhaar format');
+        setAadhaarValidationMessage('Invalid Aadhaar format');
       }
     }, 300);
   };
 
-  const handleAadhaarSave = async () => {
-    if (!isValidAadhaar(aadhaarValue)) return;
+  const handleSave = async () => {
+    if (!validatePersonalInfo()) return;
+
+    // If Aadhaar was changed and is valid, but not confirmed yet
+    if (aadhaarChanged && aadhaarValue && isValidAadhaar(aadhaarValue) && !isConfirmingAadhaar) {
+      setIsConfirmingAadhaar(true);
+      return;
+    }
+
+    // If confirming Aadhaar, validate confirmation
+    if (isConfirmingAadhaar && confirmValue !== aadhaarValue.slice(-4)) {
+      setErrors({ aadhaar: 'Confirmation does not match last 4 digits' });
+      return;
+    }
     
-    if (!isConfirming) {
-      setIsConfirming(true);
-      return;
-    }
-
-    if (confirmValue !== aadhaarValue.slice(-4)) {
-      setValidationMessage('Confirmation does not match last 4 digits');
-      return;
-    }
-
     setIsSaving(true);
     try {
-      const response = await mockFetch('/api/profile/aadhaar', {
+      // Update personal info
+      const personalResponse = await mockFetch('/api/profile/update', {
         method: 'POST',
-        body: JSON.stringify({ aadhaar: aadhaarValue }),
+        body: JSON.stringify(editedProfile),
         headers: { 'Content-Type': 'application/json' }
       });
 
-      if (response.success) {
-        onUpdate('aadhaar_masked', response.aadhaar_masked);
-        setIsEditingAadhaar(false);
-        setIsConfirming(false);
+      if (personalResponse.success) {
+        onUpdate('name', editedProfile.name);
+        onUpdate('email', editedProfile.email);
+        onUpdate('phone', editedProfile.phone);
+
+        // Update Aadhaar if it was changed
+        if (aadhaarChanged && aadhaarValue && isValidAadhaar(aadhaarValue)) {
+          const aadhaarResponse = await mockFetch('/api/profile/aadhaar', {
+            method: 'POST',
+            body: JSON.stringify({ aadhaar: aadhaarValue }),
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          if (aadhaarResponse.success) {
+            onUpdate('aadhaar_masked', aadhaarResponse.aadhaar_masked);
+          }
+        }
+
+        setIsEditing(false);
+        setIsConfirmingAadhaar(false);
         setAadhaarValue('');
         setConfirmValue('');
-        setValidationMessage('');
+        setAadhaarChanged(false);
+        setAadhaarValidationMessage('');
+        setErrors({});
       }
     } catch (error) {
-      setValidationMessage('Failed to update Aadhaar. Please try again.');
+      setErrors({ general: 'Failed to update profile. Please try again.' });
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleCancel = () => {
-    setIsEditingAadhaar(false);
-    setIsConfirming(false);
+    setIsEditing(false);
+    setEditedProfile({
+      name: profile.name,
+      email: profile.email,
+      phone: profile.phone,
+    });
+    setErrors({});
     setAadhaarValue('');
+    setAadhaarChanged(false);
+    setIsConfirmingAadhaar(false);
     setConfirmValue('');
-    setValidationMessage('');
+    setAadhaarValidationMessage('');
   };
 
   return (
@@ -482,39 +608,69 @@ const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: keyof U
       transition={{ duration: 0.6, delay: 0.2 }}
       className="bg-white/70 backdrop-blur-xl rounded-2xl p-8 shadow-2xl"
     >
-      <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-        <User className="text-emerald-500" size={24} />
-        Personal Details
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <User className="text-emerald-500" size={24} />
+          Personal Details
+        </h2>
+        
+        {!isEditing && (
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleEdit}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-medium hover:from-emerald-600 hover:to-teal-600 transition-all flex items-center gap-2"
+          >
+            <Edit3 size={16} />
+            Edit Info
+          </motion.button>
+        )}
+      </div>
 
       <div className="space-y-6">
+        {errors.general && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700"
+          >
+            {errors.general}
+          </motion.div>
+        )}
+
         <AnimatedInput
           label="Full Name"
-          value={profile.name}
-          readOnly
+          value={isEditing ? editedProfile.name : profile.name}
+          onChange={isEditing ? (value) => setEditedProfile(prev => ({ ...prev, name: value })) : undefined}
+          readOnly={!isEditing}
+          error={errors.name}
         />
 
         <AnimatedInput
           label="Email Address"
-          value={profile.email}
+          value={isEditing ? editedProfile.email : profile.email}
+          onChange={isEditing ? (value) => setEditedProfile(prev => ({ ...prev, email: value })) : undefined}
           type="email"
-          readOnly
+          readOnly={!isEditing}
+          error={errors.email}
         />
 
         <AnimatedInput
           label="Phone Number"
-          value={profile.phone}
+          value={isEditing ? editedProfile.phone : profile.phone}
+          onChange={isEditing ? (value) => setEditedProfile(prev => ({ ...prev, phone: value })) : undefined}
           type="tel"
-          readOnly
+          readOnly={!isEditing}
+          error={errors.phone}
         />
 
-        {/* Aadhaar Field with Special Handling */}
+        {/* Integrated Aadhaar Field */}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
             Aadhaar Number (12 digits)
           </label>
           
-          {!isEditingAadhaar ? (
+          {!isEditing ? (
             <div className="relative">
               <div className="flex items-center gap-4 p-4 bg-white/50 border border-slate-200 rounded-xl">
                 <Lock size={16} className="text-slate-400" />
@@ -531,15 +687,6 @@ const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: keyof U
                   >
                     {showAadhaar ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleAadhaarEdit}
-                    className="ml-2 px-3 py-1 text-sm bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 transition-colors"
-                  >
-                    <Edit3 size={14} className="inline mr-1" />
-                    Edit
-                  </motion.button>
                 </div>
               </div>
               <p className="text-xs text-slate-500 mt-2">
@@ -557,15 +704,20 @@ const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: keyof U
                   type="text"
                   value={aadhaarValue}
                   onChange={(e) => handleAadhaarValidation(e.target.value)}
-                  placeholder="Enter 12-digit Aadhaar number"
+                  placeholder="Enter 12-digit Aadhaar number (optional)"
                   inputMode="numeric"
                   autoComplete="off"
                   maxLength={12}
-                  className="w-full p-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-mono"
+                  className={`w-full p-4 bg-white/50 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-mono ${
+                    errors.aadhaar ? 'border-red-300' : 'border-slate-200'
+                  }`}
                 />
+                <p className="text-xs text-slate-500 mt-1">
+                  Leave empty to keep current Aadhaar number unchanged
+                </p>
               </div>
 
-              {isConfirming && (
+              {isConfirmingAadhaar && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -586,51 +738,67 @@ const ProfileDetails: React.FC<{ profile: UserProfile; onUpdate: (field: keyof U
                 </motion.div>
               )}
 
-              {validationMessage && (
+              {aadhaarValidationMessage && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className={`text-sm ${
-                    validationMessage.includes('Valid') ? 'text-emerald-600' : 'text-red-600'
+                    aadhaarValidationMessage.includes('Valid') ? 'text-emerald-600' : 'text-red-600'
                   }`}
                 >
-                  {validationMessage}
+                  {aadhaarValidationMessage}
                 </motion.div>
               )}
 
-              <div className="flex gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleAadhaarSave}
-                  disabled={!isValidAadhaar(aadhaarValue) || isSaving || (isConfirming && confirmValue.length !== 4)}
-                  className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+              {errors.aadhaar && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-sm text-red-600"
                 >
-                  {isSaving ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save size={16} />
-                      {isConfirming ? 'Confirm & Save' : 'Save'}
-                    </>
-                  )}
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleCancel}
-                  className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors flex items-center gap-2"
-                >
-                  <X size={16} />
-                  Cancel
-                </motion.button>
-              </div>
+                  {errors.aadhaar}
+                </motion.div>
+              )}
             </motion.div>
           )}
         </div>
+
+        {isEditing && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex gap-3 pt-4"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+            >
+              {isSaving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  {isConfirmingAadhaar ? 'Confirm & Save' : 'Save Changes'}
+                </>
+              )}
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleCancel}
+              className="px-6 py-3 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-colors flex items-center gap-2"
+            >
+              <X size={16} />
+              Cancel
+            </motion.button>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );
@@ -880,7 +1048,7 @@ const SecurityPanel: React.FC<{ profile: UserProfile }> = ({ profile }) => {
   );
 };
 
-// New Usage Overview Component with Animations
+// Usage Overview Component with Animations
 const UsageOverview: React.FC<{ profile: UserProfile }> = ({ profile }) => {
   const totalUsage = profile.apiKeys.reduce((sum, key) => sum + key.usage_count, 0);
   const progress = useMotionValue(0);
@@ -967,7 +1135,7 @@ const UsageOverview: React.FC<{ profile: UserProfile }> = ({ profile }) => {
   );
 };
 
-// New Developer Resources Component with Subtle Animation
+// Developer Resources Component with Subtle Animation
 const DeveloperResources: React.FC = () => {
   return (
     <motion.div
@@ -997,7 +1165,7 @@ const DeveloperResources: React.FC = () => {
           className="block p-4 bg-slate-50 rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-between"
         >
           <span>Tutorials & Guides</span>
-          <BookOpen size={16} className="text-emerald-500" /> {/* Assuming BookOpen icon is imported */}
+          <BookOpen size={16} className="text-emerald-500" />
         </motion.a>
 
         <motion.a
@@ -1015,7 +1183,7 @@ const DeveloperResources: React.FC = () => {
           className="block p-4 bg-slate-50 rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-between"
         >
           <span>Contact Support</span>
-          <HelpCircle size={16} className="text-emerald-500" /> {/* Assuming HelpCircle icon is imported */}
+          <HelpCircle size={16} className="text-emerald-500" />
         </motion.a>
       </div>
     </motion.div>
@@ -1040,6 +1208,7 @@ const BackgroundPattern: React.FC = () => (
 const ProfilePage: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -1065,6 +1234,29 @@ const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const response = await mockFetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.success) {
+        // In a real app, you would redirect to login page or clear auth state
+        console.log('Logged out successfully');
+        // Simulate logout process
+        setTimeout(() => {
+          alert('Logged out successfully! In a real app, you would be redirected to the login page.');
+          setIsLoggingOut(false);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setIsLoggingOut(false);
+    }
+  };
+
   const prefersReducedMotion = typeof window !== 'undefined' 
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
     : false;
@@ -1074,6 +1266,27 @@ const ProfilePage: React.FC = () => {
       <BackgroundPattern />
       
       {!prefersReducedMotion && <FloatingTechIcons />}
+      
+      {/* Logout loading overlay */}
+      <AnimatePresence>
+        {isLoggingOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white rounded-2xl p-8 shadow-2xl flex items-center gap-4"
+            >
+              <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-lg font-medium text-slate-800">Logging out...</span>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header Actions */}
@@ -1085,23 +1298,16 @@ const ProfilePage: React.FC = () => {
           >
             Developer Dashboard
           </motion.h1>
-          
-          <div className="flex gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors flex items-center gap-2"
-            >
-              <Edit3 size={16} />
-              Edit Profile
-            </motion.button>
-          </div>
         </div>
 
         {/* Profile Header - Full Width */}
-        <ProfileHeader profile={profile} isLoading={isLoading} />
+        <ProfileHeader 
+          profile={profile} 
+          isLoading={isLoading} 
+          onLogout={handleLogout}
+        />
 
-        {/* Main Content Grid - Changed to cols-2 for better balance */}
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
           {/* Left Column */}
           <div className="space-y-8">
@@ -1114,7 +1320,7 @@ const ProfilePage: React.FC = () => {
             {profile && <UsageOverview profile={profile} />}
           </div>
 
-          {/* Right Column - Added more components for balance */}
+          {/* Right Column */}
           <div className="space-y-8">
             {profile && <SecurityPanel profile={profile} />}
             {profile && (

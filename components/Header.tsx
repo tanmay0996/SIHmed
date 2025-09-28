@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Menu, X, User } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { HeartbeatLine } from './MedicalIcons';
 
 
@@ -11,6 +12,7 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [apiStatus, setApiStatus] = useState<'online' | 'offline'>('online');
   const { scrollY } = useScroll();
+  const router = useRouter();
   
   const headerBackground = useTransform(
     scrollY,
@@ -19,6 +21,10 @@ export default function Header() {
   );
 
   const borderWidth = useTransform(scrollY, [0, 100], ['0%', '100%']);
+
+  const handleProfileClick = () => {
+    router.push('/profile');
+  };
 
   useEffect(() => {
     // Simulate API status check
@@ -188,6 +194,7 @@ export default function Header() {
             {/* Profile Icon */}
             <motion.button 
               className="p-2 sm:p-2.5 rounded-full border border-[var(--border-light)] hover:border-[var(--primary-green)] hover:bg-[var(--primary-green)]/5 transition-all duration-300 group"
+              onClick={handleProfileClick}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               initial={{ opacity: 0, scale: 0 }}
@@ -215,6 +222,7 @@ export default function Header() {
           <div className="flex items-center space-x-2 sm:hidden">
             <motion.button 
               className="p-2 rounded-full border border-[var(--border-light)] hover:border-[var(--primary-green)] hover:bg-[var(--primary-green)]/5 transition-all duration-300"
+             onClick={handleProfileClick}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               initial={{ opacity: 0, scale: 0 }}
@@ -324,7 +332,8 @@ export default function Header() {
 
               {/* Profile Section in Mobile Menu */}
               <motion.div
-                className="flex items-center space-x-3 py-2 px-1 border-t border-[var(--border-light)] pt-4"
+                className="flex items-center space-x-3 py-2 px-1 border-t border-[var(--border-light)] pt-4 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={handleProfileClick}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.6, duration: 0.3 }}
