@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Tag, X, Code, Sparkles } from 'lucide-react';
+import SearchDropdown from './SearchDropdown';
 
 interface SearchFilterProps {
   searchMode: 'code' | 'symptoms';
@@ -18,32 +19,47 @@ interface SearchFilterProps {
 const EXAMPLE_CODES = ['EJC', 'SN4T', 'O-605', 'SM87', 'Z25'];
 const EXAMPLE_SYMPTOMS = ['fever', 'headache', 'nausea', 'fatigue', 'dizziness', 'joint pain', 'night blindness', 'gait disturbances'];
 
-// Types based on the expected backend response
+// Types based on the actual backend response
 interface Suggestion {
   suggestion: string;
+  type: string;
+  confidence: number;
   reason: string;
+  jaro_similarity: number;
 }
 
-interface SimilarResult {
-  total_score_percent: number;
+interface SearchResult {
+  _id: string;
   tm2_code: string;
   tm2_title: string;
+  tm2_definition: string;
+  tm2_description: string;
+  tm2_link: string;
   code: string;
   code_title: string;
+  code_description: string;
+  type: string;
+  total_score: number;
+  total_score_percent: number;
+  search_type: string;
+  keyword_score: number;
+  tfidf_score: number;
 }
 
 interface SearchData {
-  auto_corrected: boolean;
-  original_query?: string;
-  corrected_to?: string;
+  query: string;
+  original_query: string;
+  search_type: string;
   total_results: number;
   search_time: string;
-  show_suggestions: boolean;
+  results: SearchResult[];
   suggestions: Suggestion[];
+  has_exact_results: boolean;
+  similar_results_when_no_match: SearchResult[];
+  show_suggestions: boolean;
   show_similar_results: boolean;
-  similar_results_when_no_match: SimilarResult[];
-  results: any[]; // Adjust based on actual results structure
-  query: string;
+  auto_corrected: boolean;
+  corrected_to: string | null;
 }
 
 export default function SearchFilter({
@@ -58,10 +74,12 @@ export default function SearchFilter({
 }: SearchFilterProps) {
   const [tempSymptom, setTempSymptom] = useState('');
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
-  const [similarResults, setSimilarResults] = useState<SimilarResult[]>([]);
+  const [similarResults, setSimilarResults] = useState<SearchResult[]>([]);
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState<'success' | 'error' | 'warning' | 'loading' | 'info' | ''>('');
   const [correctionInfo, setCorrectionInfo] = useState('');
+  const [searchData, setSearchData] = useState<SearchData | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -75,17 +93,21 @@ export default function SearchFilter({
   const performSearch = useCallback(async (query: string, mode: 'code' | 'symptoms') => {
     if (!query.trim()) {
       clearSmartResults();
+      setShowDropdown(false);
       return;
     }
 
     setStatusMessage('Searching...');
     setStatusType('loading');
     clearSmartResults(false); // Clear results but keep status
+    setShowDropdown(true);
 
     try {
-      const response = await fetch(`/smart-search?query=${encodeURIComponent(query)}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_SEARCH_URL}/smart-search?query=${encodeURIComponent(query)}`);
       if (!response.ok) throw new Error('Search failed');
       const data: SearchData = await response.json();
+
+      setSearchData(data);
 
       let message = '';
       let type: typeof statusType = 'info';
@@ -105,18 +127,28 @@ export default function SearchFilter({
       setStatusMessage(message);
       setStatusType(type);
 
-      if (data.show_suggestions && data.suggestions.length > 0) {
+      if (data.suggestions.length > 0) {
         setSuggestions(data.suggestions);
       }
 
-      if (data.show_similar_results && data.similar_results_when_no_match.length > 0) {
+      if (data.similar_results_when_no_match.length > 0) {
         setSimilarResults(data.similar_results_when_no_match);
       }
 
-      // If there are main results, you could handle them here (e.g., preview), but for autocomplete, focus on suggestions/similar
+      // Show dropdown if there are results, or suggestions when no results
+      const hasResults = data.results.length > 0;
+      const hasSuggestions = data.suggestions.length > 0;
+      const hasSimilar = data.similar_results_when_no_match.length > 0;
+      
+      // Show dropdown if there are results, or suggestions when no results found
+      const shouldShowDropdown = hasResults || (hasSuggestions && !hasResults) || hasSimilar;
+      
+      setShowDropdown(shouldShowDropdown);
+
     } catch (error) {
       setStatusMessage(`Error: ${(error as Error).message}`);
       setStatusType('error');
+      setShowDropdown(false);
     }
   }, []);
 
@@ -126,6 +158,8 @@ export default function SearchFilter({
     setSuggestions([]);
     setSimilarResults([]);
     setCorrectionInfo('');
+    setSearchData(null);
+    setShowDropdown(false);
     if (clearStatus) {
       setStatusMessage('');
       setStatusType('');
@@ -177,6 +211,19 @@ export default function SearchFilter({
       setTempSymptom(suggestion);
       // Optionally auto-add: handleSymptomAdd();
     }
+    setShowDropdown(false);
+  };
+
+  const handleResultClick = (result: SearchResult) => {
+    if (searchMode === 'code') {
+      setInputValue(result.code);
+      debouncedSearch(result.code, 'code');
+    }
+    setShowDropdown(false);
+  };
+
+  const handleDropdownClose = () => {
+    setShowDropdown(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, mode: 'code' | 'symptoms') => {
@@ -189,8 +236,15 @@ export default function SearchFilter({
     debouncedSearch(value, mode);
   };
 
-  const canSearch = searchMode === 'code' 
-    ? inputValue.trim() 
+  const handleInputFocus = () => {
+    // Show dropdown if there's existing search data
+    if (searchData && (searchData.results.length > 0 || searchData.suggestions.length > 0)) {
+      setShowDropdown(true);
+    }
+  };
+
+  const canSearch = searchMode === 'code'
+    ? inputValue.trim()
     : symptomTags.length > 0;
 
   return (
@@ -201,22 +255,20 @@ export default function SearchFilter({
           <div className="flex">
             <button
               onClick={() => setSearchMode('code')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                searchMode === 'code' 
-                  ? 'bg-emerald-500 text-white shadow-sm' 
+              className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${searchMode === 'code'
+                  ? 'bg-emerald-500 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
-              }`}
+                }`}
             >
               <Code className="w-4 h-4" />
               <span>Code Search</span>
             </button>
             <button
               onClick={() => setSearchMode('symptoms')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                searchMode === 'symptoms' 
-                  ? 'bg-emerald-500 text-white shadow-sm' 
+              className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${searchMode === 'symptoms'
+                  ? 'bg-emerald-500 text-white shadow-sm'
                   : 'text-slate-600 hover:text-slate-800'
-              }`}
+                }`}
             >
               <Tag className="w-4 h-4" />
               <span>Symptoms Search</span>
@@ -243,10 +295,22 @@ export default function SearchFilter({
                   value={inputValue}
                   onChange={(e) => handleInputChange(e, 'code')}
                   onKeyDown={handleCodeKeyDown}
+                  onFocus={handleInputFocus}
                   placeholder="Enter AYUSH code (e.g., EJC, SN4T, O-605)"
                   className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm font-mono focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                 />
                 <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                
+                {/* Search Dropdown */}
+                <SearchDropdown
+                  isVisible={showDropdown}
+                  searchData={searchData}
+                  isLoading={statusType === 'loading'}
+                  searchMode="code"
+                  onSuggestionClick={handleSuggestionClick}
+                  onResultClick={handleResultClick}
+                  onClose={handleDropdownClose}
+                />
               </div>
               <button
                 onClick={onSearch}
@@ -310,7 +374,7 @@ export default function SearchFilter({
                 </div>
               </div>
             )}
-            
+
             {/* Example codes */}
             <div className="bg-white/60 rounded-lg p-4 border border-slate-200/50">
               <div className="flex items-center space-x-2 mb-3">
@@ -340,10 +404,22 @@ export default function SearchFilter({
                   value={tempSymptom}
                   onChange={(e) => handleInputChange(e, 'symptoms')}
                   onKeyDown={handleSymptomKeyDown}
+                  onFocus={handleInputFocus}
                   placeholder="Add symptom (e.g., fever, headache, nausea)..."
                   className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                 />
                 <Tag className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                
+                {/* Search Dropdown */}
+                <SearchDropdown
+                  isVisible={showDropdown}
+                  searchData={searchData}
+                  isLoading={statusType === 'loading'}
+                  searchMode="symptoms"
+                  onSuggestionClick={handleSuggestionClick}
+                  onResultClick={handleResultClick}
+                  onClose={handleDropdownClose}
+                />
               </div>
               <button
                 onClick={handleSymptomAdd}
@@ -464,7 +540,7 @@ export default function SearchFilter({
                     </motion.div>
                   ))}
                 </div>
-                
+
                 {/* Search Button for Symptoms */}
                 <div className="flex justify-center">
                   <button
@@ -484,7 +560,7 @@ export default function SearchFilter({
       {/* Search Description */}
       <div className="text-center">
         <p className="text-xs text-slate-500">
-          {searchMode === 'code' 
+          {searchMode === 'code'
             ? 'Search for specific AYUSH medicine codes and get results grouped by TM2 categories'
             : 'Add multiple symptoms to find relevant treatments across traditional medicine systems'
           }
