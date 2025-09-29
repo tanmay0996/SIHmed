@@ -79,7 +79,7 @@ export default function SearchFilter({
   const [correctionInfo, setCorrectionInfo] = useState('');
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedCode, setSelectedCode] = useState<string>('');
+  const [isUserTyping, setIsUserTyping] = useState(false);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -90,10 +90,14 @@ export default function SearchFilter({
     };
   };
 
-  const performSearch = useCallback(async (query: string, mode: 'code' | 'symptoms') => {
+  const performSearch = useCallback(async (query: string, mode: 'code' | 'symptoms', fromUserTyping: boolean) => {
     if (!query.trim()) {
       clearSmartResults();
       setShowDropdown(false);
+      return;
+    }
+
+    if (!fromUserTyping) {
       return;
     }
 
@@ -170,6 +174,7 @@ export default function SearchFilter({
       setSymptomTags([...symptomTags, symptom]);
       setTempSymptom('');
       clearSmartResults();
+      setShowDropdown(false);
     }
   };
 
@@ -191,29 +196,29 @@ export default function SearchFilter({
   };
 
   const handleExampleClick = (example: string) => {
+    setIsUserTyping(false);
     if (searchMode === 'code') {
       setInputValue(example);
-      debouncedSearch(example, 'code');
     } else {
-      if (!symptomTags.includes(example.toLowerCase())) {
-        setSymptomTags([...symptomTags, example.toLowerCase()]);
-      }
+      setTempSymptom(example);
     }
   };
 
   const handleSuggestionClick = (suggestion: string, code?: string) => {
+    setIsUserTyping(false);
     if (searchMode === 'code') {
       setInputValue(suggestion);
-      debouncedSearch(suggestion, 'code');
     } else {
-      // For symptom mode, store the code from the clicked suggestion
+      // Flow 1: Code selected from dropdown
       if (code) {
-        setSelectedCode(code);
-        setInputValue(code); // Store the code to be sent to API
-        setTempSymptom(suggestion); // Keep the symptom name for display
-        // Trigger the search immediately with the code
-        onSearch();
+        setInputValue(code);
+        setTempSymptom('');
+        setSymptomTags([]); // Clear any existing tags
+        clearSmartResults();
+        setShowDropdown(false);
+        setTimeout(() => onSearch(), 0);
       } else {
+        // Just fill the input for further editing
         setTempSymptom(suggestion);
       }
     }
@@ -221,44 +226,50 @@ export default function SearchFilter({
   };
 
   const handleResultClick = (result: SearchResult) => {
+    setIsUserTyping(false);
     if (searchMode === 'code') {
       setInputValue(result.code);
-      debouncedSearch(result.code, 'code');
     } else {
-      // For symptom mode, store the code from the result
-      setSelectedCode(result.code);
+      // Flow 1: Code selected from dropdown
       setInputValue(result.code);
-      setTempSymptom(result.code_title);
-      // Trigger the search immediately with the code
-      onSearch();
+      setTempSymptom('');
+      setSymptomTags([]); // Clear any existing tags
+      clearSmartResults();
+      setShowDropdown(false);
+      setTimeout(() => onSearch(), 0);
     }
     setShowDropdown(false);
   };
 
   const handleDropdownClose = () => {
     setShowDropdown(false);
+    setIsUserTyping(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, mode: 'code' | 'symptoms') => {
     const value = e.target.value;
+    setIsUserTyping(true);
+    
     if (mode === 'code') {
       setInputValue(value);
     } else {
       setTempSymptom(value);
-      setSelectedCode(''); // Clear selected code when user types
     }
-    debouncedSearch(value, mode);
+    
+    debouncedSearch(value, mode, true);
   };
 
   const handleInputFocus = () => {
-    if (searchData && (searchData.results.length > 0 || searchData.suggestions.length > 0)) {
+    if (isUserTyping && searchData && (searchData.results.length > 0 || searchData.suggestions.length > 0)) {
       setShowDropdown(true);
     }
   };
 
+  // Flow 1: inputValue has a code (selected from dropdown)
+  // Flow 2: symptomTags array has values (manual tag entry)
   const canSearch = searchMode === 'code'
     ? inputValue.trim()
-    : symptomTags.length > 0 || selectedCode.trim();
+    : (inputValue.trim() || symptomTags.length > 0);
 
   return (
     <div className="space-y-6">
@@ -333,13 +344,13 @@ export default function SearchFilter({
               </button>
             </div>
 
-            {statusMessage && (
+            {statusMessage && isUserTyping && (
               <div className={`text-sm p-2 rounded ${statusType === 'success' ? 'bg-green-100 text-green-700' : statusType === 'error' ? 'bg-red-100 text-red-700' : statusType === 'warning' ? 'bg-yellow-100 text-yellow-700' : statusType === 'loading' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
                 {statusMessage}
               </div>
             )}
 
-            {correctionInfo && (
+            {correctionInfo && isUserTyping && (
               <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800">
                 {correctionInfo}
               </div>
@@ -364,7 +375,7 @@ export default function SearchFilter({
             </div>
           </div>
         ) : (
-          /* Symptoms Search */
+          /* Symptoms Search - Two Flows */
           <div className="space-y-4">
             <div className="flex gap-3">
               <div className="flex-1 relative">
@@ -374,7 +385,7 @@ export default function SearchFilter({
                   onChange={(e) => handleInputChange(e, 'symptoms')}
                   onKeyDown={handleSymptomKeyDown}
                   onFocus={handleInputFocus}
-                  placeholder="Search symptom to get code suggestions..."
+                  placeholder="Type symptom and press Enter to add tag, or click code from dropdown"
                   className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                 />
                 <Tag className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -389,49 +400,40 @@ export default function SearchFilter({
                   onClose={handleDropdownClose}
                 />
               </div>
+              <button
+                onClick={onSearch}
+                disabled={isLoading || !canSearch}
+                className="px-6 py-3 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 min-w-[100px]"
+              >
+                Search
+              </button>
             </div>
 
-            {statusMessage && (
-              <div className={`text-sm p-2 rounded ${statusType === 'success' ? 'bg-green-100 text-green-700' : statusType === 'error' ? 'bg-red-100 text-red-700' : statusType === 'warning' ? 'bg-yellow-100 text-yellow-700' : statusType === 'loading' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
-                {statusMessage}
+            {/* Flow 2: Show symptom tags */}
+            {symptomTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                <span className="text-xs font-medium text-emerald-700 self-center">Symptoms:</span>
+                {symptomTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium"
+                  >
+                    {tag}
+                    <button
+                      onClick={() => handleSymptomRemove(tag)}
+                      className="hover:text-emerald-900"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
               </div>
             )}
 
-            {selectedCode && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="bg-emerald-50/80 rounded-lg p-4 border border-emerald-200/50"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-emerald-700">
-                    Selected Code from Symptom
-                  </span>
-                  <button
-                    onClick={() => {
-                      setSelectedCode('');
-                      setInputValue('');
-                    }}
-                    className="text-xs text-emerald-600 hover:text-red-500 transition-colors"
-                  >
-                    Clear
-                  </button>
-                </div>
-                <div className="flex items-center space-x-3 bg-emerald-100 text-emerald-800 px-4 py-2 rounded-lg">
-                  <Code className="w-4 h-4" />
-                  <span className="font-mono font-semibold">{selectedCode}</span>
-                  <span className="text-sm">({tempSymptom})</span>
-                </div>
-                <div className="flex justify-center mt-4">
-                  <button
-                    onClick={onSearch}
-                    disabled={isLoading}
-                    className="px-8 py-3 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                  >
-                    {isLoading ? 'Searching...' : 'Search This Code'}
-                  </button>
-                </div>
-              </motion.div>
+            {statusMessage && isUserTyping && (
+              <div className={`text-sm p-2 rounded ${statusType === 'success' ? 'bg-green-100 text-green-700' : statusType === 'error' ? 'bg-red-100 text-red-700' : statusType === 'warning' ? 'bg-yellow-100 text-yellow-700' : statusType === 'loading' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                {statusMessage}
+              </div>
             )}
 
             <div className="bg-white/60 rounded-lg p-4 border border-slate-200/50">
@@ -443,10 +445,7 @@ export default function SearchFilter({
                 {EXAMPLE_SYMPTOMS.map((symptom) => (
                   <button
                     key={symptom}
-                    onClick={() => {
-                      setTempSymptom(symptom);
-                      debouncedSearch(symptom, 'symptoms');
-                    }}
+                    onClick={() => handleExampleClick(symptom)}
                     className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-medium hover:bg-blue-200 transition-colors capitalize"
                   >
                     {symptom}
@@ -463,7 +462,7 @@ export default function SearchFilter({
         <p className="text-xs text-slate-500">
           {searchMode === 'code'
             ? 'Search for specific AYUSH medicine codes and get results grouped by TM2 categories'
-            : 'Search symptoms to get code suggestions, then select a code to view details'
+            : 'Click a code from dropdown for instant results, or add multiple symptom tags and search'
           }
         </p>
       </div>

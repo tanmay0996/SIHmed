@@ -63,19 +63,16 @@ export default function LiveDemoAutoplay() {
   const [tm2Groups, setTM2Groups] = useState<TM2Group[]>([]);
   const [totalMatches, setTotalMatches] = useState(0);
 
-  // Helper function to validate API response
   const isValidApiResponse = (data: any): data is ApiResponse => {
     return data && 
            Array.isArray(data.parameter) && 
            data.parameter.length > 0;
   };
 
-  // Parse API response and group by TM2 codes
   const parseApiResponseToGroups = (response: ApiResponse): TM2Group[] => {
     const tm2Map = new Map<string, TM2Group>();
     
     response.parameter.forEach(param => {
-      // Handle new symptom-based search format with diseaseGroup
       if (param.name === 'diseaseGroup' && param.part) {
         let tm2Code = '';
         let tm2Display = '';
@@ -84,7 +81,6 @@ export default function LiveDemoAutoplay() {
         let symptomSimilarityScore = 0;
         const traditionalMappings: any[] = [];
         
-        // Extract TM2 disease info and traditional medicine mappings
         param.part.forEach(part => {
           if (part.name === 'tm2Disease' && part.part) {
             tm2Code = part.part.find(p => p.name === 'code')?.valueCode || '';
@@ -114,7 +110,6 @@ export default function LiveDemoAutoplay() {
           
           const group = tm2Map.get(groupId)!;
           
-          // Process traditional medicine mappings
           traditionalMappings.forEach(mapping => {
             let code = '';
             let display = '';
@@ -144,7 +139,6 @@ export default function LiveDemoAutoplay() {
                 system: systemType
               };
               
-              // Assign to appropriate system (normalize system names)
               const normalizedSystem = systemType.toLowerCase();
               if (normalizedSystem === 'namaste' || normalizedSystem === 'ayurveda') {
                 group.ayurvedaMatch = systemMatch;
@@ -157,7 +151,6 @@ export default function LiveDemoAutoplay() {
           });
         }
       }
-      // Handle legacy code-based search format with match
       else if (param.name === 'match' && param.part) {
         let code = '';
         let display = '';
@@ -210,7 +203,6 @@ export default function LiveDemoAutoplay() {
             system: systemType
           };
           
-          // Assign to appropriate system (normalize system names)
           const normalizedSystem = systemType.toLowerCase();
           if (normalizedSystem === 'namaste' || normalizedSystem === 'ayurveda') {
             group.ayurvedaMatch = systemMatch;
@@ -223,7 +215,6 @@ export default function LiveDemoAutoplay() {
       }
     });
     
-    // Calculate average confidence for each group
     const groups = Array.from(tm2Map.values()).map(group => {
       const matches = [group.ayurvedaMatch, group.siddhaMatch, group.unaniMatch].filter(Boolean);
       const avgConfidence = matches.reduce((sum, match) => sum + match!.confidenceScore, 0) / matches.length;
@@ -305,7 +296,15 @@ export default function LiveDemoAutoplay() {
   };
 
   const handleSearch = async () => {
-    const canSearch = searchMode === 'code' ? inputValue.trim() : (symptomTags.length > 0 || inputValue.trim());
+    // Flow 1: inputValue contains code (from dropdown selection)
+    // Flow 2: symptomTags array contains symptoms (manual tag entry)
+    const hasCodeSelected = inputValue.trim();
+    const hasSymptomTags = symptomTags.length > 0;
+    
+    const canSearch = searchMode === 'code' 
+      ? hasCodeSelected 
+      : (hasCodeSelected || hasSymptomTags);
+    
     if (!canSearch) return;
     
     setIsLoading(true);
@@ -316,7 +315,7 @@ export default function LiveDemoAutoplay() {
       let response;
       
       if (searchMode === 'code') {
-        // Code search endpoint using path parameter
+        // Standard code search
         const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/code/${encodeURIComponent(inputValue.trim())}`;
         response = await fetch(apiUrl, {
           method: 'GET',
@@ -325,10 +324,10 @@ export default function LiveDemoAutoplay() {
           },
         });
       } else {
-        // For symptom mode: if inputValue exists, it's a code from the dropdown, send it to the code endpoint
-        // Otherwise, use the traditional symptom tags search
-        if (inputValue.trim()) {
-          // User clicked on a code suggestion from symptoms - treat it as a code search
+        // Symptom mode has two distinct flows:
+        
+        // Flow 1: Code selected from dropdown (inputValue is populated)
+        if (hasCodeSelected) {
           const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/code/${encodeURIComponent(inputValue.trim())}`;
           response = await fetch(apiUrl, {
             method: 'GET',
@@ -336,9 +335,33 @@ export default function LiveDemoAutoplay() {
               'Content-Type': 'application/json'
             },
           });
-        } else {
-          // Traditional symptom-based search with tags
-          const symptomsQuery = symptomTags.join(', ');
+        } 
+        // Flow 2: Multiple symptom tags added (symptomTags array is populated)
+        else if (hasSymptomTags) {
+          // Choose ONE of these API formats based on your backend:
+          
+          // Option A: POST with JSON body (RECOMMENDED)
+          const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/symptoms`;
+          response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ symptoms: symptomTags })
+          });
+          
+          /* Option B: GET with JSON array in query param
+          const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/symptoms?symptoms=${encodeURIComponent(JSON.stringify(symptomTags))}`;
+          response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+          });
+          */
+          
+          /* Option C: GET with comma-separated string
+          const symptomsQuery = symptomTags.join(',');
           const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/symptoms?query=${encodeURIComponent(symptomsQuery)}`;
           response = await fetch(apiUrl, {
             method: 'GET',
@@ -346,7 +369,14 @@ export default function LiveDemoAutoplay() {
               'Content-Type': 'application/json'
             },
           });
+          */
+        } else {
+          throw new Error('Invalid search state');
         }
+      }
+      
+      if (!response) {
+        throw new Error('No response from API');
       }
       
       if (!response.ok) {
@@ -355,68 +385,63 @@ export default function LiveDemoAutoplay() {
       
       const data = await response.json();
       
-      // Validate API response structure
       if (!isValidApiResponse(data)) {
         throw new Error('Invalid response format from API');
       }
       
-      // Check if the API returned an error or no results
       const resultParam = data.parameter?.find(p => p.name === 'result');
       const errorParam = data.parameter?.find(p => p.name === 'error');
       const messageParam = data.parameter?.find(p => p.name === 'message');
       
-      // For symptom-based searches (new format)
       const totalDiseaseGroupsParam = data.parameter?.find(p => p.name === 'totalDiseaseGroups');
       const diseaseGroupParams = data.parameter?.filter(p => p.name === 'diseaseGroup') || [];
       
-      // For code-based searches (legacy format)
       const resultCountParam = data.parameter?.find(p => p.name === 'resultCount');
       const totalMatchesParam = data.parameter?.find(p => p.name === 'totalMatches');
       const matchParams = data.parameter?.filter(p => p.name === 'match') || [];
       
-      // Handle API errors
       if (resultParam?.valueBoolean === false) {
-        // Handle "too many results" error for symptom searches
         if (errorParam?.valueString === 'Too many results') {
           const count = resultCountParam?.valueInteger || 0;
           const message = messageParam?.valueString || `Too many results found (${count}). Please add more specific symptoms to narrow down your search.`;
           throw new Error(message);
         }
-        // Handle other errors
         const message = messageParam?.valueString || errorParam?.valueString || 'Search failed. Please try again.';
         throw new Error(message);
       }
       
-      // Parse groups to double-check if we have valid matches
       const groups = parseApiResponseToGroups(data);
       
-      // Check for no matches based on search type
       let hasResults = false;
       let totalCount = 0;
       
-      if (searchMode === 'symptoms') {
-        // Use new format parameters for symptom search
+      // Determine which format we're dealing with based on search type
+      const isSymptomTagSearch = searchMode === 'symptoms' && hasSymptomTags;
+      
+      if (isSymptomTagSearch) {
         totalCount = totalDiseaseGroupsParam?.valueInteger || 0;
         hasResults = diseaseGroupParams.length > 0 && groups.length > 0;
       } else {
-        // Use legacy format parameters for code search
         totalCount = totalMatchesParam?.valueInteger || matchParams.length;
         hasResults = matchParams.length > 0 && groups.length > 0;
       }
       
-      // Multiple conditions to catch "no matches" scenarios
       if (
-        // Explicit no matches from API
         (resultParam?.valueBoolean === true && totalCount === 0) ||
-        // No valid groups after parsing
         !hasResults ||
         groups.length === 0
       ) {
-        const searchTerm = searchMode === 'code' ? `code: "${inputValue.trim()}"` : `symptoms: "${symptomTags.join(', ')}"`;
+        let searchTerm = '';
+        if (searchMode === 'code') {
+          searchTerm = `code: "${inputValue.trim()}"`;
+        } else if (hasCodeSelected) {
+          searchTerm = `code: "${inputValue.trim()}"`;
+        } else {
+          searchTerm = `symptoms: "${symptomTags.join(', ')}"`;
+        }
         throw new Error(`No matches found for ${searchTerm}. Please try a different search term or check your spelling.`);
       }
       
-      // If we get here, we should have valid results
       setApiResponse(data);
       setTotalMatches(totalCount || groups.length);
       setTM2Groups(groups);
@@ -428,7 +453,6 @@ export default function LiveDemoAutoplay() {
       setApiResponse(null);
       setTM2Groups([]);
       setTotalMatches(0);
-      // Stay on search view to show the error
       setCurrentView('search');
     } finally {
       setIsLoading(false);
@@ -463,10 +487,8 @@ export default function LiveDemoAutoplay() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            {/* Background glow */}
             <div className="absolute -inset-2 bg-gradient-to-r from-emerald-100/20 via-white/40 to-teal-100/20 rounded-xl blur-xl" />
             <div className="relative">
-              {/* Header */}
               <div className="text-center mb-6">
                 <motion.div className="flex items-center justify-center space-x-1.5 mb-2">
                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
@@ -481,7 +503,6 @@ export default function LiveDemoAutoplay() {
                 </p>
               </div>
 
-              {/* Loading Animation */}
               <AnimatePresence>
                 {isLoading && (
                   <motion.div
@@ -516,7 +537,6 @@ export default function LiveDemoAutoplay() {
                 )}
               </AnimatePresence>
 
-              {/* Error Display */}
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -531,7 +551,6 @@ export default function LiveDemoAutoplay() {
                 )}
               </AnimatePresence>
 
-              {/* Dynamic Content Based on View State */}
               <AnimatePresence mode="wait">
                 {currentView === 'search' && !isLoading && (
                   <motion.div
