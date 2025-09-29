@@ -1,4 +1,3 @@
-// app/TryNow/components/LiveDemoAutoplay.tsx
 "use client";
 
 import { useState } from 'react';
@@ -306,7 +305,7 @@ export default function LiveDemoAutoplay() {
   };
 
   const handleSearch = async () => {
-    const canSearch = searchMode === 'code' ? inputValue.trim() : symptomTags.length > 0;
+    const canSearch = searchMode === 'code' ? inputValue.trim() : (symptomTags.length > 0 || inputValue.trim());
     if (!canSearch) return;
     
     setIsLoading(true);
@@ -326,14 +325,28 @@ export default function LiveDemoAutoplay() {
           },
         });
       } else {
-        const symptomsQuery = symptomTags.join(', ');
-        const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/symptoms?query=${encodeURIComponent(symptomsQuery)}`;
-        response = await fetch(apiUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-        });
+        // For symptom mode: if inputValue exists, it's a code from the dropdown, send it to the code endpoint
+        // Otherwise, use the traditional symptom tags search
+        if (inputValue.trim()) {
+          // User clicked on a code suggestion from symptoms - treat it as a code search
+          const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/code/${encodeURIComponent(inputValue.trim())}`;
+          response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+          });
+        } else {
+          // Traditional symptom-based search with tags
+          const symptomsQuery = symptomTags.join(', ');
+          const apiUrl = `${process.env.NEXT_PUBLIC_URL}/api/fhir/search/symptoms?query=${encodeURIComponent(symptomsQuery)}`;
+          response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+          });
+        }
       }
       
       if (!response.ok) {

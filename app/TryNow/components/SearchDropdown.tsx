@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Code, Tag, Sparkles, TrendingUp, Clock } from 'lucide-react';
 
-// Types for the JSON response based on actual API structure
 interface Suggestion {
   suggestion: string;
   type: string;
@@ -52,7 +51,7 @@ interface SearchDropdownProps {
   searchData: SearchData | null;
   isLoading: boolean;
   searchMode: 'code' | 'symptoms';
-  onSuggestionClick: (suggestion: string) => void;
+  onSuggestionClick: (suggestion: string, code?: string) => void;
   onResultClick: (result: SearchResult) => void;
   onClose: () => void;
 }
@@ -69,28 +68,24 @@ export default function SearchDropdown({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Reset selected index when dropdown becomes visible
   useEffect(() => {
     if (isVisible) {
       setSelectedIndex(0);
     }
   }, [isVisible]);
 
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isVisible) return;
 
       const suggestions = searchData?.suggestions || [];
-      const results = searchData?.results?.slice(0, 3) || []; // Top 3 results
+      const results = searchData?.results?.slice(0, 3) || [];
       
-      // Only show suggestions when no results are found
       const visibleSuggestions = results.length === 0 ? suggestions : [];
       const totalItems = visibleSuggestions.length + results.length;
 
       if (totalItems === 0) return;
 
-      // Check if the active element is an input (for search)
       const activeElement = document.activeElement;
       const isInputFocused = activeElement && activeElement.tagName === 'INPUT';
 
@@ -108,7 +103,11 @@ export default function SearchDropdown({
         case 'Enter':
           e.preventDefault();
           if (selectedIndex < visibleSuggestions.length) {
-            onSuggestionClick(visibleSuggestions[selectedIndex].suggestion);
+            const suggestion = visibleSuggestions[selectedIndex];
+            // Extract code from suggestion text if it contains a code pattern
+            const codeMatch = suggestion.suggestion.match(/\b([A-Z0-9]{2,6}(?:-[A-Z0-9]+)?)\b/);
+            const code = codeMatch ? codeMatch[1] : undefined;
+            onSuggestionClick(suggestion.suggestion, code);
           } else {
             const resultIndex = selectedIndex - visibleSuggestions.length;
             const result = results[resultIndex];
@@ -129,11 +128,9 @@ export default function SearchDropdown({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isVisible, selectedIndex, searchData, onSuggestionClick, onResultClick, onClose]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        // Check if the click is not on the input field
         const target = event.target as Element;
         if (!target.closest('input')) {
           onClose();
@@ -142,7 +139,6 @@ export default function SearchDropdown({
     };
 
     if (isVisible) {
-      // Add a small delay to prevent immediate closing when input loses focus
       const timeoutId = setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside);
       }, 100);
@@ -159,9 +155,8 @@ export default function SearchDropdown({
   if (!isVisible) return null;
 
   const suggestions = searchData?.suggestions || [];
-  const results = searchData?.results?.slice(0, 3) || []; // Show top 3 results
+  const results = searchData?.results?.slice(0, 3) || [];
   
-  // Only show suggestions when no results are found
   const visibleSuggestions = results.length === 0 ? suggestions : [];
   const hasContent = visibleSuggestions.length > 0 || results.length > 0 || isLoading;
 
@@ -176,7 +171,6 @@ export default function SearchDropdown({
           transition={{ duration: 0.2 }}
           className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto"
         >
-          {/* Loading State */}
           {isLoading && (
             <div className="p-4 flex items-center justify-center space-x-2 text-slate-600">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-emerald-500 border-t-transparent"></div>
@@ -184,7 +178,6 @@ export default function SearchDropdown({
             </div>
           )}
 
-          {/* Auto-correction Notice */}
           {searchData?.auto_corrected && (
             <div className="p-3 bg-yellow-50 border-b border-yellow-200">
               <div className="flex items-center space-x-2 text-sm">
@@ -196,7 +189,6 @@ export default function SearchDropdown({
             </div>
           )}
 
-          {/* Search Status */}
           {searchData && !isLoading && (
             <div className="p-3 border-b border-slate-100">
               <div className="flex items-center justify-between text-sm text-slate-600">
@@ -223,13 +215,15 @@ export default function SearchDropdown({
             </div>
           )}
 
-          {/* Search Results Section - Top 3 */}
+          {/* Search Results Section */}
           {results.length > 0 && (
             <div className="border-b border-slate-100">
               <div className="p-3 bg-green-50/50">
                 <h3 className="text-sm font-medium text-green-800 flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4" />
-                  <span>Top Results ({results.length})</span>
+                  <span>
+                    {searchMode === 'symptoms' ? 'Code Suggestions' : 'Top Results'} ({results.length})
+                  </span>
                 </h3>
               </div>
               <div className="divide-y divide-slate-100">
@@ -246,16 +240,13 @@ export default function SearchDropdown({
                   >
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 mt-1">
-                        <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                        <Code className="w-4 h-4 text-emerald-500" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between mb-1">
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-slate-900">
+                            <span className="text-sm font-mono font-bold text-slate-900">
                               {result.code}
-                            </span>
-                            <span className="text-xs text-slate-500">
-                              ({result.tm2_code})
                             </span>
                             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
                               {result.type}
@@ -268,8 +259,13 @@ export default function SearchDropdown({
                         <div className="text-sm text-slate-700 mb-1 font-medium">
                           {result.code_title}
                         </div>
+                        {searchMode === 'symptoms' && (
+                          <div className="text-xs text-emerald-600 font-medium mb-1">
+                            Click to search this code →
+                          </div>
+                        )}
                         <div className="text-xs text-slate-500 mb-1">
-                          TM2: {result.tm2_title}
+                          TM2: {result.tm2_code} - {result.tm2_title}
                         </div>
                         <div className="text-xs text-slate-400 line-clamp-2">
                           {result.code_description}
@@ -282,7 +278,7 @@ export default function SearchDropdown({
             </div>
           )}
 
-          {/* Suggestions Section - Only show when no results found */}
+          {/* Suggestions Section - Only show when no results */}
           {suggestions.length > 0 && results.length === 0 && (
             <div className="border-b border-slate-100">
               <div className="p-3 bg-blue-50/50">
@@ -292,41 +288,52 @@ export default function SearchDropdown({
                 </h3>
               </div>
               <div className="divide-y divide-slate-100">
-                {suggestions.map((suggestion, index) => (
-                  <motion.button
-                    key={index}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => onSuggestionClick(suggestion.suggestion)}
-                    className={`w-full p-3 text-left hover:bg-blue-50 transition-colors ${
-                      selectedIndex === index ? 'bg-blue-100' : ''
-                    }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div className="flex-shrink-0 mt-0.5">
-                        {searchMode === 'code' ? (
-                          <Code className="w-4 h-4 text-blue-500" />
-                        ) : (
-                          <Tag className="w-4 h-4 text-blue-500" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-1">
-                          <div className="font-medium text-blue-900">
-                            {suggestion.suggestion}
+                {suggestions.map((suggestion, index) => {
+                  // Extract code from suggestion if present
+                  const codeMatch = suggestion.suggestion.match(/\b([A-Z0-9]{2,6}(?:-[A-Z0-9]+)?)\b/);
+                  const extractedCode = codeMatch ? codeMatch[1] : undefined;
+                  
+                  return (
+                    <motion.button
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => onSuggestionClick(suggestion.suggestion, extractedCode)}
+                      className={`w-full p-3 text-left hover:bg-blue-50 transition-colors ${
+                        selectedIndex === index ? 'bg-blue-100' : ''
+                      }`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {searchMode === 'code' ? (
+                            <Code className="w-4 h-4 text-blue-500" />
+                          ) : (
+                            <Tag className="w-4 h-4 text-blue-500" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-1">
+                            <div className="font-medium text-blue-900">
+                              {suggestion.suggestion}
+                              {extractedCode && searchMode === 'symptoms' && (
+                                <span className="ml-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded">
+                                  Code: {extractedCode}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-blue-400 font-medium">
+                              {Math.round(suggestion.confidence * 100)}%
+                            </span>
                           </div>
-                          <span className="text-xs text-blue-400 font-medium">
-                            {Math.round(suggestion.confidence * 100)}%
-                          </span>
-                        </div>
-                        <div className="text-sm text-blue-700">
-                          {suggestion.reason}
+                          <div className="text-sm text-blue-700">
+                            {suggestion.reason}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.button>
-                ))}
+                    </motion.button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -344,7 +351,12 @@ export default function SearchDropdown({
           {(visibleSuggestions.length > 0 || results.length > 0) && (
             <div className="p-2 bg-slate-50 border-t border-slate-100">
               <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Use ↑↓ to navigate, Enter to select, Esc to close</span>
+                <span>
+                  {searchMode === 'symptoms' 
+                    ? 'Click a code to search for details'
+                    : 'Use ↑↓ to navigate, Enter to select, Esc to close'
+                  }
+                </span>
                 <span>{visibleSuggestions.length + results.length} items</span>
               </div>
             </div>

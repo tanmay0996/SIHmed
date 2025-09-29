@@ -19,7 +19,6 @@ interface SearchFilterProps {
 const EXAMPLE_CODES = ['EJC', 'SN4T', 'O-605', 'SM87', 'Z25'];
 const EXAMPLE_SYMPTOMS = ['fever', 'headache', 'nausea', 'fatigue', 'dizziness', 'joint pain', 'night blindness', 'gait disturbances'];
 
-// Types based on the actual backend response
 interface Suggestion {
   suggestion: string;
   type: string;
@@ -80,6 +79,7 @@ export default function SearchFilter({
   const [correctionInfo, setCorrectionInfo] = useState('');
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedCode, setSelectedCode] = useState<string>('');
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -99,7 +99,7 @@ export default function SearchFilter({
 
     setStatusMessage('Searching...');
     setStatusType('loading');
-    clearSmartResults(false); // Clear results but keep status
+    clearSmartResults(false);
     setShowDropdown(true);
 
     try {
@@ -135,12 +135,10 @@ export default function SearchFilter({
         setSimilarResults(data.similar_results_when_no_match);
       }
 
-      // Show dropdown if there are results, or suggestions when no results
       const hasResults = data.results.length > 0;
       const hasSuggestions = data.suggestions.length > 0;
       const hasSimilar = data.similar_results_when_no_match.length > 0;
       
-      // Show dropdown if there are results, or suggestions when no results found
       const shouldShowDropdown = hasResults || (hasSuggestions && !hasResults) || hasSimilar;
       
       setShowDropdown(shouldShowDropdown);
@@ -203,13 +201,21 @@ export default function SearchFilter({
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = (suggestion: string, code?: string) => {
     if (searchMode === 'code') {
       setInputValue(suggestion);
       debouncedSearch(suggestion, 'code');
     } else {
-      setTempSymptom(suggestion);
-      // Optionally auto-add: handleSymptomAdd();
+      // For symptom mode, store the code from the clicked suggestion
+      if (code) {
+        setSelectedCode(code);
+        setInputValue(code); // Store the code to be sent to API
+        setTempSymptom(suggestion); // Keep the symptom name for display
+        // Trigger the search immediately with the code
+        onSearch();
+      } else {
+        setTempSymptom(suggestion);
+      }
     }
     setShowDropdown(false);
   };
@@ -218,6 +224,13 @@ export default function SearchFilter({
     if (searchMode === 'code') {
       setInputValue(result.code);
       debouncedSearch(result.code, 'code');
+    } else {
+      // For symptom mode, store the code from the result
+      setSelectedCode(result.code);
+      setInputValue(result.code);
+      setTempSymptom(result.code_title);
+      // Trigger the search immediately with the code
+      onSearch();
     }
     setShowDropdown(false);
   };
@@ -232,12 +245,12 @@ export default function SearchFilter({
       setInputValue(value);
     } else {
       setTempSymptom(value);
+      setSelectedCode(''); // Clear selected code when user types
     }
     debouncedSearch(value, mode);
   };
 
   const handleInputFocus = () => {
-    // Show dropdown if there's existing search data
     if (searchData && (searchData.results.length > 0 || searchData.suggestions.length > 0)) {
       setShowDropdown(true);
     }
@@ -245,7 +258,7 @@ export default function SearchFilter({
 
   const canSearch = searchMode === 'code'
     ? inputValue.trim()
-    : symptomTags.length > 0;
+    : symptomTags.length > 0 || selectedCode.trim();
 
   return (
     <div className="space-y-6">
@@ -301,7 +314,6 @@ export default function SearchFilter({
                 />
                 <Search className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 
-                {/* Search Dropdown */}
                 <SearchDropdown
                   isVisible={showDropdown}
                   searchData={searchData}
@@ -321,61 +333,18 @@ export default function SearchFilter({
               </button>
             </div>
 
-            {/* Smart Search Status */}
             {statusMessage && (
               <div className={`text-sm p-2 rounded ${statusType === 'success' ? 'bg-green-100 text-green-700' : statusType === 'error' ? 'bg-red-100 text-red-700' : statusType === 'warning' ? 'bg-yellow-100 text-yellow-700' : statusType === 'loading' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
                 {statusMessage}
               </div>
             )}
 
-            {/* Correction Info */}
             {correctionInfo && (
               <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800">
                 {correctionInfo}
               </div>
             )}
 
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
-                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span>Did you mean?</span>
-                </h3>
-                <div className="space-y-2">
-                  {suggestions.map((sug, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(sug.suggestion)}
-                      className="block w-full text-left text-sm bg-blue-50 p-2 rounded hover:bg-blue-100 transition-colors"
-                    >
-                      <strong>{sug.suggestion}</strong> - {sug.reason}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Similar Results */}
-            {similarResults.length > 0 && (
-              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
-                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span>Similar Results</span>
-                </h3>
-                <div className="space-y-2">
-                  {similarResults.map((result, index) => (
-                    <div key={index} className="text-sm border-b pb-2 last:border-0">
-                      <div><strong>Relevance:</strong> {result.total_score_percent}%</div>
-                      <div><strong>TM2:</strong> {result.tm2_code} - {result.tm2_title}</div>
-                      <div><strong>Code:</strong> {result.code} - {result.code_title}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Example codes */}
             <div className="bg-white/60 rounded-lg p-4 border border-slate-200/50">
               <div className="flex items-center space-x-2 mb-3">
                 <Sparkles className="w-4 h-4 text-blue-500" />
@@ -405,12 +374,11 @@ export default function SearchFilter({
                   onChange={(e) => handleInputChange(e, 'symptoms')}
                   onKeyDown={handleSymptomKeyDown}
                   onFocus={handleInputFocus}
-                  placeholder="Add symptom (e.g., fever, headache, nausea)..."
+                  placeholder="Search symptom to get code suggestions..."
                   className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white/80 backdrop-blur-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                 />
                 <Tag className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
                 
-                {/* Search Dropdown */}
                 <SearchDropdown
                   isVisible={showDropdown}
                   searchData={searchData}
@@ -421,80 +389,64 @@ export default function SearchFilter({
                   onClose={handleDropdownClose}
                 />
               </div>
-              <button
-                onClick={handleSymptomAdd}
-                disabled={!tempSymptom.trim()}
-                className="px-6 py-3 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-              >
-                Add
-              </button>
             </div>
 
-            {/* Smart Search Status */}
             {statusMessage && (
               <div className={`text-sm p-2 rounded ${statusType === 'success' ? 'bg-green-100 text-green-700' : statusType === 'error' ? 'bg-red-100 text-red-700' : statusType === 'warning' ? 'bg-yellow-100 text-yellow-700' : statusType === 'loading' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
                 {statusMessage}
               </div>
             )}
 
-            {/* Correction Info */}
-            {correctionInfo && (
-              <div className="bg-yellow-50 p-3 rounded border border-yellow-200 text-sm text-yellow-800">
-                {correctionInfo}
-              </div>
-            )}
-
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
-              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
-                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span>Did you mean?</span>
-                </h3>
-                <div className="space-y-2">
-                  {suggestions.map((sug, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSuggestionClick(sug.suggestion)}
-                      className="block w-full text-left text-sm bg-blue-50 p-2 rounded hover:bg-blue-100 transition-colors"
-                    >
-                      <strong>{sug.suggestion}</strong> - {sug.reason}
-                    </button>
-                  ))}
+            {selectedCode && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="bg-emerald-50/80 rounded-lg p-4 border border-emerald-200/50"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-emerald-700">
+                    Selected Code from Symptom
+                  </span>
+                  <button
+                    onClick={() => {
+                      setSelectedCode('');
+                      setInputValue('');
+                    }}
+                    className="text-xs text-emerald-600 hover:text-red-500 transition-colors"
+                  >
+                    Clear
+                  </button>
                 </div>
-              </div>
-            )}
-
-            {/* Similar Results */}
-            {similarResults.length > 0 && (
-              <div className="bg-white/80 p-4 rounded-lg border border-slate-200">
-                <h3 className="text-sm font-medium mb-2 flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-blue-500" />
-                  <span>Similar Results</span>
-                </h3>
-                <div className="space-y-2">
-                  {similarResults.map((result, index) => (
-                    <div key={index} className="text-sm border-b pb-2 last:border-0">
-                      <div><strong>Relevance:</strong> {result.total_score_percent}%</div>
-                      <div><strong>TM2:</strong> {result.tm2_code} - {result.tm2_title}</div>
-                      <div><strong>Code:</strong> {result.code} - {result.code_title}</div>
-                    </div>
-                  ))}
+                <div className="flex items-center space-x-3 bg-emerald-100 text-emerald-800 px-4 py-2 rounded-lg">
+                  <Code className="w-4 h-4" />
+                  <span className="font-mono font-semibold">{selectedCode}</span>
+                  <span className="text-sm">({tempSymptom})</span>
                 </div>
-              </div>
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={onSearch}
+                    disabled={isLoading}
+                    className="px-8 py-3 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                  >
+                    {isLoading ? 'Searching...' : 'Search This Code'}
+                  </button>
+                </div>
+              </motion.div>
             )}
 
-            {/* Example symptoms */}
             <div className="bg-white/60 rounded-lg p-4 border border-slate-200/50">
               <div className="flex items-center space-x-2 mb-3">
                 <Sparkles className="w-4 h-4 text-blue-500" />
-                <span className="text-sm font-medium text-slate-700">Suggested symptoms:</span>
+                <span className="text-sm font-medium text-slate-700">Try searching for:</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {EXAMPLE_SYMPTOMS.map((symptom) => (
                   <button
                     key={symptom}
-                    onClick={() => handleExampleClick(symptom)}
+                    onClick={() => {
+                      setTempSymptom(symptom);
+                      debouncedSearch(symptom, 'symptoms');
+                    }}
                     className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-medium hover:bg-blue-200 transition-colors capitalize"
                   >
                     {symptom}
@@ -502,57 +454,6 @@ export default function SearchFilter({
                 ))}
               </div>
             </div>
-
-            {/* Symptom Tags Display */}
-            {symptomTags.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="bg-emerald-50/80 rounded-lg p-4 border border-emerald-200/50"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-emerald-700">
-                    Selected Symptoms ({symptomTags.length})
-                  </span>
-                  <button
-                    onClick={() => setSymptomTags([])}
-                    className="text-xs text-emerald-600 hover:text-red-500 transition-colors"
-                  >
-                    Clear all
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {symptomTags.map((symptom, index) => (
-                    <motion.div
-                      key={symptom}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center space-x-2 bg-emerald-100 text-emerald-800 px-3 py-1.5 rounded-full text-sm font-medium"
-                    >
-                      <span className="capitalize">{symptom}</span>
-                      <button
-                        onClick={() => handleSymptomRemove(symptom)}
-                        className="text-emerald-600 hover:text-emerald-800 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Search Button for Symptoms */}
-                <div className="flex justify-center">
-                  <button
-                    onClick={onSearch}
-                    disabled={isLoading || !canSearch}
-                    className="px-8 py-3 bg-emerald-500 text-white text-sm font-medium rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 min-w-[140px]"
-                  >
-                    {isLoading ? 'Analyzing...' : 'Search Symptoms'}
-                  </button>
-                </div>
-              </motion.div>
-            )}
           </div>
         )}
       </motion.div>
@@ -562,7 +463,7 @@ export default function SearchFilter({
         <p className="text-xs text-slate-500">
           {searchMode === 'code'
             ? 'Search for specific AYUSH medicine codes and get results grouped by TM2 categories'
-            : 'Add multiple symptoms to find relevant treatments across traditional medicine systems'
+            : 'Search symptoms to get code suggestions, then select a code to view details'
           }
         </p>
       </div>
