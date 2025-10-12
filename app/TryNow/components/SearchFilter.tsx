@@ -80,6 +80,7 @@ export default function SearchFilter({
   const [searchData, setSearchData] = useState<SearchData | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
+  const [selectedDropdownIndex, setSelectedDropdownIndex] = useState(0);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -91,6 +92,35 @@ export default function SearchFilter({
     setSymptomTags([]);
     clearSmartResults();
     setIsUserTyping(false);
+    setSelectedDropdownIndex(0);
+  }, [searchMode]);
+
+  // Handle dropdown navigation updates
+  const handleDropdownNavigationUpdate = useCallback((index: number, suggestion?: string, result?: SearchResult) => {
+    setSelectedDropdownIndex(index);
+    
+    // Update input based on the selected item
+    if (result) {
+      // If it's a result, update with code (always uppercase)
+      if (searchMode === 'code') {
+        setInputValue(result.code.toUpperCase());
+      } else {
+        setTempSymptom(result.code.toUpperCase());
+      }
+    } else if (suggestion) {
+      // If it's a suggestion, update with suggestion text (uppercase for code mode)
+      if (searchMode === 'code') {
+        setInputValue(suggestion.toUpperCase());
+      } else {
+        // For symptoms mode, update with full suggestion or extracted code
+        const codeMatch = suggestion.match(/\b([A-Z0-9]{2,6}(?:-[A-Z0-9]+)?)\b/);
+        const displayValue = codeMatch ? codeMatch[1] : suggestion;
+        setTempSymptom(displayValue);
+      }
+    }
+    
+    // Stop user typing flag so dropdown stays open
+    setIsUserTyping(true);
   }, [searchMode]);
 
   const debounce = (func: Function, delay: number) => {
@@ -218,20 +248,28 @@ export default function SearchFilter({
   const handleExampleClick = (example: string) => {
     setIsUserTyping(false);
     if (searchMode === 'code') {
-      setInputValue(example);
+      setInputValue(example.toUpperCase());
     } else {
       setTempSymptom(example);
     }
   };
 
-  const handleSuggestionClick = (suggestion: string, code?: string) => {
+  const handleSuggestionClick = (suggestion: string, code?: string, shouldSearch: boolean = false) => {
     setIsUserTyping(false);
     if (searchMode === 'code') {
-      setInputValue(suggestion);
+      const upperValue = suggestion ? suggestion.toUpperCase() : '';
+      setInputValue(upperValue);
+      clearSmartResults();
+      setShowDropdown(false);
+      // If shouldSearch is true (from keyboard Enter), trigger search
+      if (shouldSearch) {
+        setTimeout(() => onSearch(), 0);
+      }
     } else {
       // Flow 1: Code selected from dropdown
       if (code) {
-        setInputValue(code);
+        const upperCode = code ? code.toUpperCase() : '';
+        setInputValue(upperCode);
         setTempSymptom('');
         setSymptomTags([]); // Clear any existing tags
         clearSmartResults();
@@ -239,26 +277,35 @@ export default function SearchFilter({
         setTimeout(() => onSearch(), 0);
       } else {
         // Just fill the input for further editing
-        setTempSymptom(suggestion);
+        setTempSymptom(suggestion || '');
+        setShowDropdown(false);
+        // If shouldSearch is true (from keyboard Enter), trigger search
+        if (shouldSearch) {
+          setTimeout(() => onSearch(), 0);
+        }
       }
     }
-    setShowDropdown(false);
   };
 
-  const handleResultClick = (result: SearchResult) => {
+  const handleResultClick = (result: SearchResult, shouldSearch: boolean = false) => {
     setIsUserTyping(false);
     if (searchMode === 'code') {
-      setInputValue(result.code);
+      const upperCode = result?.code ? result.code.toUpperCase() : '';
+      setInputValue(upperCode);
+      clearSmartResults();
+      setShowDropdown(false);
+      // Always trigger search when result is clicked or selected via keyboard
+      setTimeout(() => onSearch(), 0);
     } else {
       // Flow 1: Code selected from dropdown
-      setInputValue(result.code);
+      const upperCode = result?.code ? result.code.toUpperCase() : '';
+      setInputValue(upperCode);
       setTempSymptom('');
       setSymptomTags([]); // Clear any existing tags
       clearSmartResults();
       setShowDropdown(false);
       setTimeout(() => onSearch(), 0);
     }
-    setShowDropdown(false);
   };
 
   const handleDropdownClose = () => {
@@ -269,14 +316,16 @@ export default function SearchFilter({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, mode: 'code' | 'symptoms') => {
     const value = e.target.value;
     setIsUserTyping(true);
+    setSelectedDropdownIndex(0); // Reset selection when user types
     
     if (mode === 'code') {
-      setInputValue(value);
+      // Convert to uppercase for code mode
+      setInputValue(value.toUpperCase());
+      debouncedSearch(value.toUpperCase(), mode, true);
     } else {
       setTempSymptom(value);
+      debouncedSearch(value, mode, true);
     }
-    
-    debouncedSearch(value, mode, true);
   };
 
   const handleInputFocus = () => {
@@ -353,6 +402,8 @@ export default function SearchFilter({
                   onSuggestionClick={handleSuggestionClick}
                   onResultClick={handleResultClick}
                   onClose={handleDropdownClose}
+                  onNavigationUpdate={handleDropdownNavigationUpdate}
+                  selectedIndex={selectedDropdownIndex}
                 />
               </div>
               <button
@@ -418,6 +469,8 @@ export default function SearchFilter({
                   onSuggestionClick={handleSuggestionClick}
                   onResultClick={handleResultClick}
                   onClose={handleDropdownClose}
+                  onNavigationUpdate={handleDropdownNavigationUpdate}
+                  selectedIndex={selectedDropdownIndex}
                 />
               </div>
               <button

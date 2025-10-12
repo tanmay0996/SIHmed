@@ -51,9 +51,11 @@ interface SearchDropdownProps {
   searchData: SearchData | null;
   isLoading: boolean;
   searchMode: 'code' | 'symptoms';
-  onSuggestionClick: (suggestion: string, code?: string) => void;
-  onResultClick: (result: SearchResult) => void;
+  onSuggestionClick: (suggestion: string, code?: string, shouldSearch?: boolean) => void;
+  onResultClick: (result: SearchResult, shouldSearch?: boolean) => void;
   onClose: () => void;
+  onNavigationUpdate: (index: number, suggestion?: string, result?: SearchResult) => void;
+  selectedIndex: number;
 }
 
 export default function SearchDropdown({
@@ -63,14 +65,16 @@ export default function SearchDropdown({
   searchMode,
   onSuggestionClick,
   onResultClick,
-  onClose
+  onClose,
+  onNavigationUpdate,
+  selectedIndex
 }: SearchDropdownProps) {
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isVisible) {
-      setSelectedIndex(0);
+      // Just reset the index, don't update input
+      // onNavigationUpdate will be called when user presses arrow keys
     }
   }, [isVisible]);
 
@@ -94,11 +98,31 @@ export default function SearchDropdown({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex(prev => (prev + 1) % totalItems);
+          const nextIndex = (selectedIndex + 1) % totalItems;
+          
+          // Update input based on selection
+          if (nextIndex < visibleSuggestions.length) {
+            const suggestion = visibleSuggestions[nextIndex];
+            onNavigationUpdate(nextIndex, suggestion.suggestion);
+          } else {
+            const resultIndex = nextIndex - visibleSuggestions.length;
+            const result = results[resultIndex];
+            onNavigationUpdate(nextIndex, undefined, result);
+          }
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex(prev => (prev - 1 + totalItems) % totalItems);
+          const prevIndex = (selectedIndex - 1 + totalItems) % totalItems;
+          
+          // Update input based on selection
+          if (prevIndex < visibleSuggestions.length) {
+            const suggestion = visibleSuggestions[prevIndex];
+            onNavigationUpdate(prevIndex, suggestion.suggestion);
+          } else {
+            const resultIndex = prevIndex - visibleSuggestions.length;
+            const result = results[resultIndex];
+            onNavigationUpdate(prevIndex, undefined, result);
+          }
           break;
         case 'Enter':
           e.preventDefault();
@@ -107,11 +131,13 @@ export default function SearchDropdown({
             // Extract code from suggestion text if it contains a code pattern
             const codeMatch = suggestion.suggestion.match(/\b([A-Z0-9]{2,6}(?:-[A-Z0-9]+)?)\b/);
             const code = codeMatch ? codeMatch[1] : undefined;
-            onSuggestionClick(suggestion.suggestion, code);
+            // Pass shouldSearch=true to trigger search automatically
+            onSuggestionClick(suggestion.suggestion, code, true);
           } else {
             const resultIndex = selectedIndex - visibleSuggestions.length;
             const result = results[resultIndex];
-            onResultClick(result);
+            // Pass shouldSearch=true to trigger search automatically
+            onResultClick(result, true);
           }
           break;
         case 'Escape':
@@ -126,7 +152,7 @@ export default function SearchDropdown({
     }
 
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isVisible, selectedIndex, searchData, onSuggestionClick, onResultClick, onClose]);
+  }, [isVisible, selectedIndex, searchData, onSuggestionClick, onResultClick, onClose, onNavigationUpdate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -233,7 +259,7 @@ export default function SearchDropdown({
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    onClick={() => onResultClick(result)}
+                    onClick={() => onResultClick(result, false)}
                     className={`w-full p-3 text-left hover:bg-green-50 transition-colors ${
                       selectedIndex === visibleSuggestions.length + index ? 'bg-green-100' : ''
                     }`}
@@ -299,7 +325,7 @@ export default function SearchDropdown({
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      onClick={() => onSuggestionClick(suggestion.suggestion, extractedCode)}
+                      onClick={() => onSuggestionClick(suggestion.suggestion, extractedCode, false)}
                       className={`w-full p-3 text-left hover:bg-blue-50 transition-colors ${
                         selectedIndex === index ? 'bg-blue-100' : ''
                       }`}
@@ -352,10 +378,7 @@ export default function SearchDropdown({
             <div className="p-2 bg-slate-50 border-t border-slate-100">
               <div className="flex items-center justify-between text-xs text-slate-500">
                 <span>
-                  {searchMode === 'symptoms' 
-                    ? 'Click a code to search for details'
-                    : 'Use ↑↓ to navigate, Enter to select, Esc to close'
-                  }
+                  Use ↑↓ to navigate, Enter to select & search, Esc to close
                 </span>
                 <span>{visibleSuggestions.length + results.length} items</span>
               </div>
