@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Search, Tag, X, Code, Sparkles } from 'lucide-react';
 import SearchDropdown from './SearchDropdown';
@@ -82,6 +82,16 @@ export default function SearchFilter({
   const [isUserTyping, setIsUserTyping] = useState(false);
 
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+
+  // Clear states when search mode changes
+  useEffect(() => {
+    // Clear input value when switching modes
+    setInputValue('');
+    setTempSymptom('');
+    setSymptomTags([]);
+    clearSmartResults();
+    setIsUserTyping(false);
+  }, [searchMode]);
 
   const debounce = (func: Function, delay: number) => {
     return (...args: any[]) => {
