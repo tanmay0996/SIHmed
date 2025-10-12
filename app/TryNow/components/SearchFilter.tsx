@@ -195,13 +195,23 @@ export default function SearchFilter({
   const handleSymptomKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleSymptomAdd();
+      // If there's text in tempSymptom, add it as a tag
+      if (tempSymptom.trim()) {
+        handleSymptomAdd();
+      } 
+      // If there are symptom tags or inputValue (code selected), trigger search
+      else if (symptomTags.length > 0 || inputValue.trim()) {
+        onSearch();
+      }
     }
   };
 
   const handleCodeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      onSearch();
+      e.preventDefault();
+      if (inputValue.trim()) {
+        onSearch();
+      }
     }
   };
 
