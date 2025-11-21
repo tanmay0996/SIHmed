@@ -1,11 +1,9 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
-import ClientWrapper from '@/components/ClientWrapper';
+import AppLayoutClient from './AppLayoutClient';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 
 export const metadata: Metadata = {
   title: 'MedBridge API - Dual-Code Ayush Diagnoses with WHO ICD-11',
@@ -23,11 +21,7 @@ export default function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
       </head>
-      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans relative`}>
-        <ClientWrapper>
-          {children}
-        </ClientWrapper>
-      </body>
+      <AppLayoutClient>{children}</AppLayoutClient>
       <SpeedInsights />
     </html>
   );
